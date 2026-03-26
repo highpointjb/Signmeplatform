@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Sign Me — Own Your Future</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:#fafaf8;color:#0f0f0a;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:#d4d4c8;border-radius:4px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes ping{0%{transform:scale(1);opacity:1;}80%,100%{transform:scale(2.2);opacity:0;}}
+.fade{animation:fadeUp .22s ease;}
+button{font-family:inherit;cursor:pointer;transition:all .14s;}
+button:active:not(:disabled){transform:scale(.97);}
+input,select,textarea{font-family:inherit;}
+
+.card{background:#fff;border:1px solid #e8e8e0;border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(15,15,10,.05);}
+.hover{cursor:pointer;transition:all .15s;}
+.hover:hover{box-shadow:0 4px 10px rgba(15,15,10,.08);transform:translateY(-1px);border-color:#d4d4c8;}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;font-weight:600;border-radius:11px;border:none;cursor:pointer;transition:all .14s;white-space:nowrap;}
+.btn:active:not(:disabled){transform:scale(.97);}
+.btn-primary{background:linear-gradient(135deg,#b45309,#f59e0b);color:#fff;box-shadow:0 2px 6px rgba(180,83,9,.2);}
+.btn-primary:hover{filter:brightness(1.06);}
+.btn-secondary{background:#f5f5f0;color:#3d3d35;border:1px solid #e8e8e0;}
+.btn-secondary:hover{background:#e8e8e0;}
+.btn-ghost{background:transparent;color:#78786a;}
+.btn-ghost:hover{background:#f5f5f0;}
+.btn-danger{background:#fef2f2;color:#dc2626;border:1px solid #fecaca;}
+.btn-danger:hover{background:#fee2e2;}
+.btn-success{background:#16a34a;color:#fff;}
+.btn-success:hover{background:#15803d;}
+.btn-sm{padding:6px 12px;font-size:12px;}
+.btn-md{padding:9px 16px;font-size:13px;}
+.btn-lg{padding:13px 26px;font-size:15px;}
+.btn-full{width:100%;}
+
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid;}
+.g-amber{background:#fffbeb;color:#b45309;border-color:#fde68a;}
+.g-indigo{background:#eef2ff;color:#4338ca;border-color:#c7d2fe;}
+.g-green{background:#f0fdf4;color:#15803d;border-color:#bbf7d0;}
+.g-purple{background:#faf5ff;color:#7e22ce;border-color:#e9d5ff;}
+.g-red{background:#fef2f2;color:#dc2626;border-color:#fecaca;}
+.g-warm{background:#f5f5f0;color:#5a5a50;border-color:#e8e8e0;}
+
+.prog{height:6px;border-radius:3px;background:#f5f5f0;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;transition:width .5s;}
+
+.nav-item{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:9px;font-size:13px;font-weight:500;border:none;background:transparent;color:#78786a;cursor:pointer;transition:all .13s;position:relative;white-space:nowrap;}
+.nav-item:hover{color:#3d3d35;background:#f5f5f0;}
+.nav-item.on{color:#0f0f0a;background:#f5f5f0;}
+.nav-dot{position:absolute;top:-1px;right:-1px;width:15px;height:15px;border-radius:50%;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;}
+
+#toast-wrap{position:fixed;top:14px;right:14px;z-index:9999;pointer-events:none;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast-wrap"></div>
+<div id="modals"></div>
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const ROLES={
+  athlete:{id:'athlete',label:'Athlete',icon:'🏅',color:'#ea580c',bg:'#fff7ed',border:'#fed7aa',desc:'HS recruit, transfer, or JUCO athlete',
+    nav:[{id:'home',icon:'⌂',l:'Home'},{id:'explore',icon:'◎',l:'Explore'},{id:'deals',icon:'$',l:'My Deals',b:2},{id:'profile',icon:'○',l:'My Profile'},{id:'inbox',icon:'✉',l:'Inbox',b:3}]},
+  coach:{id:'coach',label:'Coach',icon:'📋',color:'#4f46e5',bg:'#eef2ff',border:'#c7d2fe',desc:'College or HS coach and recruiting staff',
+    nav:[{id:'home',icon:'⌂',l:'Home'},{id:'athletes',icon:'⊞',l:'Athletes'},{id:'board',icon:'⊟',l:'Board'},{id:'inbox',icon:'✉',l:'Inbox',b:1}]},
+  brand:{id:'brand',label:'Brand',icon:'✦',color:'#9333ea',bg:'#faf5ff',border:'#e9d5ff',desc:'NIL sponsors, agencies, and marketing partners',
+    nav:[{id:'home',icon:'⌂',l:'Home'},{id:'discover',icon:'⊕',l:'Discover'},{id:'campaigns',icon:'▤',l:'Campaigns'},{id:'inbox',icon:'✉',l:'Inbox'}]},
+  admin:{id:'admin',label:'Admin',icon:'🔑',color:'#16a34a',bg:'#f0fdf4',border:'#bbf7d0',desc:'Athletic directors and compliance officers',
+    nav:[{id:'home',icon:'⌂',l:'Home'},{id:'staff',icon:'⬡',l:'Staff'},{id:'compliance',icon:'☰',l:'Compliance'},{id:'athletes',icon:'⊞',l:'Athletes'}]},
+};
+
+const ATHLETES=[
+  {id:'a1',name:'Tyler Brooks',pos:'WR',school:'Mater Dei',div:'HS',status:'Receiving Offers',stars:5,gpa:'3.9',nil:true,followers:'78K',eng:'6.1%',cats:['Apparel','Energy Drinks'],verified:true,ms:72},
+  {id:'a2',name:'Marcus Williams',pos:'QB',school:'Alabama',div:'D1',status:'In Portal',stars:5,gpa:'3.8',nil:true,followers:'145K',eng:'4.2%',cats:['Gaming','Apparel'],verified:true,ms:88},
+  {id:'a3',name:'Jordan Lee',pos:'PG',school:'Duke',div:'D1',status:'In Portal',stars:4,gpa:'3.4',nil:true,followers:'32K',eng:'5.8%',cats:['Footwear'],verified:true,ms:61},
+  {id:'a4',name:'Aaliyah Davis',pos:'SF',school:'UConn',div:'D1',status:'Committed',stars:5,gpa:'3.9',nil:false,followers:'18K',eng:'7.1%',cats:['Apparel'],verified:false,ms:55},
+  {id:'a5',name:'Maya Johnson',pos:'C',school:'Montverde',div:'HS',status:'Receiving Offers',stars:5,gpa:'4.0',nil:true,followers:'21K',eng:'7.3%',cats:['Footwear','Apparel'],verified:true,ms:63},
+  {id:'a6',name:'Jaylen Moore',pos:'RB',school:'Tyler JC',div:'JUCO',status:'In Portal',stars:4,gpa:'3.1',nil:true,followers:'8K',eng:'4.9%',cats:['Apparel'],verified:false,ms:44},
+  {id:'a7',name:'DeShawn Carter',pos:'WR',school:'Georgia Tech',div:'D1',status:'In Portal',stars:4,gpa:'3.6',nil:true,followers:'14K',eng:'3.7%',cats:['Gaming'],verified:false,ms:51},
+  {id:'a8',name:'Priya Nair',pos:'MID',school:'Stanford',div:'D1',status:'In Portal',stars:4,gpa:'4.0',nil:false,followers:'6K',eng:'8.2%',cats:[],verified:true,ms:38},
+];
+
+const PROGRAMS=[
+  {school:'Alabama',conf:'SEC',state:'AL',scheme:'Pro Style',need:'immediate',depth:1,nilR:5,nilAvg:180000},
+  {school:'TCU',conf:'Big 12',state:'TX',scheme:'Air Raid',need:'immediate',depth:2,nilR:3,nilAvg:65000},
+  {school:'Ohio State',conf:'Big Ten',state:'OH',scheme:'Spread RPO',need:'next_year',depth:3,nilR:5,nilAvg:170000},
+  {school:'Georgia',conf:'SEC',state:'GA',scheme:'Pro Style',need:'depth',depth:4,nilR:5,nilAvg:155000},
+  {school:'Oregon',conf:'Big Ten',state:'OR',scheme:'Spread RPO',need:'immediate',depth:2,nilR:4,nilAvg:90000},
+  {school:'Utah',conf:'Big 12',state:'UT',scheme:'Pro Style',need:'immediate',depth:1,nilR:3,nilAvg:55000},
+];
+
+const INIT_STAFF=[
+  {id:'s1',name:'Coach Harris',role:'coach',dept:'Offense',status:'active',token:'FPT_s1_tcu'},
+  {id:'s2',name:'Coach Davis',role:'coach',dept:'Defense',status:'active',token:'FPT_s2_tcu'},
+  {id:'s3',name:'Coach Martinez',role:'recruit',dept:'Recruiting',status:'pending_verification',token:'FPT_s3_tcu'},
+  {id:'s4',name:'Coach Thompson',role:'coach',dept:'Special Teams',status:'suspended',reason:'Under review',token:'FPT_s4_tcu'},
+  {id:'s5',name:'Coach Williams',role:'coach',dept:'Offense',status:'revoked',reason:'Staff terminated 3/15/2026',token:'FPT_s5_tcu'},
+];
+
+const TOUR={
+  athlete:[
+    {title:'Welcome to Sign Me',body:'Your home base. Track coach interest, manage NIL deals, and build your profile.',pg:'home'},
+    {title:'Explore',body:'Browse the transfer portal and programs. See who is looking for athletes at your position.',pg:'explore'},
+    {title:'My Deals',body:'Receive brand offers here. Every contract gets an AI review in plain English before you decide.',pg:'deals'},
+    {title:'My Profile',body:'Your Market Profile shows brands your deal value, engagement, and recruiting credentials.',pg:'profile'},
+    {title:'Inbox',body:'Direct messages from coaches and brands — logged and secure.',pg:'inbox'},
+  ],
+  coach:[
+    {title:'Welcome to Sign Me',body:'Your FPT credential is verified. Everything you do is tied to your institutional identity.',pg:'home'},
+    {title:'Athletes',body:'Browse the full transfer portal. Filter by sport, GPA, NIL status, position, and more.',pg:'athletes'},
+    {title:'Board',body:'Your Kanban recruiting pipeline from Identified through Committed.',pg:'board'},
+    {title:'Inbox',body:'Message athletes directly. Every message is logged against your FPT for compliance.',pg:'inbox'},
+  ],
+  brand:[
+    {title:'Welcome to Sign Me',body:'Discover NIL-eligible athletes, view their market scores, and send deal offers.',pg:'home'},
+    {title:'Discover',body:'Browse by sport, follower count, and engagement. Market scores are visible to brands only.',pg:'discover'},
+    {title:'Campaigns',body:'Track every deal from offer to completion. Athletes keep 100% — you pay an 8% fee.',pg:'campaigns'},
+    {title:'Inbox',body:'Communicate directly with athletes through the platform.',pg:'inbox'},
+  ],
+  admin:[
+    {title:'Welcome to Sign Me',body:'Full visibility over every staff credential at your institution.',pg:'home'},
+    {title:'Staff',body:'Every coach has an FPT tied to their .edu. Verify, suspend, or revoke access instantly.',pg:'staff'},
+    {title:'Compliance',body:'Every FPT action is logged automatically. Full audit trail, always current.',pg:'compliance'},
+    {title:'Athletes',body:'Read-only view of the full athlete database for oversight.',pg:'athletes'},
+  ],
+};
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+const S={
+  screen:'landing',
+  role:'athlete',
+  page:'home',
+  selRole:null,
+  onbStep:0,
+  tourStep:0,
+  tourOn:false,
+  tourDone:false,
+  trialDays:12,
+  upgraded:false,
+  showUpgrade:false,
+  social:{instagram:true,tiktok:false,youtube:false,twitter:false,rivals:true,hudl:true},
+  connecting:null,
+  matchResults:null,
+  matchLoading:false,
+  exploreTab:'portal',
+  staffList:JSON.parse(JSON.stringify(INIT_STAFF)),
+  adminFilter:'all',
+  auditLog:[
+    {icon:'🚨',txt:'Coach Williams FPT revoked — staff terminated',time:'3/15/2026 9:14 AM',c:'#dc2626'},
+    {icon:'⚠️',txt:'Coach Thompson FPT suspended — under review',time:'3/14/2026 2:30 PM',c:'#d97706'},
+    {icon:'⏳',txt:'Coach Martinez .edu verification pending',time:'3/13/2026 11:05 AM',c:'#d97706'},
+    {icon:'✅',txt:'Coach Harris FPT issued — tcu.edu verified',time:'3/10/2026 8:20 AM',c:'#16a34a'},
+  ],
+  board:{a6:'Contacted',a2:'Offered',a4:'Film Review'},
+  watchlist:[],
+  profileTab:'film',
+  contractTab:'summary',
+  mediaFiles:[
+    {file:'2025_season_highlights.mp4',quality:94,tags:['Route running','Season reel','Touchdowns']},
+    {file:'practice_drills.mp4',quality:82,tags:['Footwork','Route technique']},
+  ],
+};
+
+function set(u){Object.assign(S,u);render();}
+
+let tT;
+function toast(msg,ok=true){
+  const el=document.getElementById('toast-wrap');
+  el.innerHTML=`<div style="padding:10px 15px;border-radius:10px;font-size:13px;font-weight:500;background:${ok?'#f0fdf4':'#fef2f2'};border:1px solid ${ok?'#bbf7d0':'#fecaca'};color:${ok?'#15803d':'#dc2626'};box-shadow:0 4px 14px rgba(0,0,0,.1);animation:fadeIn .2s ease;">${msg}</div>`;
+  clearTimeout(tT);tT=setTimeout(()=>el.innerHTML='',3000);
+}
+function closeMod(){document.getElementById('modals').innerHTML='';}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function cur(n){return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(n);}
+function stars(n){return Array.from({length:5}).map((_,i)=>`<span style="color:${i<n?'#f59e0b':'#e8e8e0'};font-size:11px;">★</span>`).join('');}
+function prog(pct,col='#d97706',h=5){return `<div class="prog" style="height:${h}px"><div class="prog-fill" style="width:${pct}%;background:${col};height:${h}px"></div></div>`;}
+
+const SC={
+  'In Portal':'g-amber','Committed':'g-indigo','Signed':'g-green',
+  'Receiving Offers':'g-purple','Withdrawn':'g-red',
+};
+const FC={
+  active:'g-green',pending_verification:'g-amber',suspended:'g-amber',revoked:'g-red',
+};
+const FL={active:'Active',pending_verification:'Pending',suspended:'Suspended',revoked:'Revoked'};
+
+function statCard(lbl,val,sub,col='#0f0f0a'){
+  return `<div class="card" style="text-align:center;">
+    <p style="font-size:10px;font-weight:600;color:#a8a898;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">${lbl}</p>
+    <p style="font-size:22px;font-weight:700;color:${col};margin-bottom:2px;">${val}</p>
+    ${sub?`<p style="font-size:11px;color:#a8a898;">${sub}</p>`:''}
+  </div>`;
+}
+
+// ── SCORE ─────────────────────────────────────────────────────────────────────
+function scoreP(p){
+  const sf={'Air Raid':28,'Spread RPO':24,'Pro Style':18,'Power Run':10}[p.scheme]||16;
+  const pt=p.need==='immediate'?22:p.need==='next_year'?14:6;
+  const dep=Math.max(0,22-p.depth*5);
+  const score=Math.min(sf+(dep||pt)+15+(p.nilR>=4?10:7)+12+(p.state==='CA'?11:['TX','GA'].includes(p.state)?8:5),100);
+  const reasons=[];
+  if(sf>=24)reasons.push(`${p.scheme} is ideal for WRs`);
+  if(p.need==='immediate')reasons.push('Open scholarship need this cycle');
+  if(p.nilR>=4)reasons.push(`Strong NIL — avg ${cur(p.nilAvg)}/deal`);
+  if(p.depth<=1)reasons.push('Thin at WR — high playing time');
+  return{school:p.school,conf:p.conf,score:Math.round(score),reasons:reasons.slice(0,2),verified:p.need==='immediate'&&p.depth<=2};
+}
+
+// ── RENDER ENTRY ─────────────────────────────────────────────────────────────
+function render(){
+  const root=document.getElementById('root');
+  if(S.screen==='landing')root.innerHTML=landing();
+  else if(S.screen==='onboarding')root.innerHTML=onboarding();
+  else root.innerHTML=app();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// LANDING PAGE
+// ═══════════════════════════════════════════════════════════════════════════════
+function landing(){
+  return `<div style="min-height:100vh;">
+    <nav style="height:56px;background:#fff;border-bottom:1px solid #e8e8e0;display:flex;align-items:center;padding:0 24px;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,.04);position:sticky;top:0;z-index:100;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:13px;box-shadow:0 2px 6px rgba(180,83,9,.2);">S</div>
+        <span style="font-weight:700;color:#0f0f0a;font-size:15px;">Sign Me</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="set({screen:'onboarding',onbStep:0})" class="btn btn-ghost btn-sm">Log in</button>
+        <button onclick="set({screen:'onboarding',onbStep:0})" class="btn btn-primary btn-sm">Get started</button>
+      </div>
+    </nav>
+
+    <section style="max-width:820px;margin:0 auto;padding:80px 24px 56px;text-align:center;">
+      <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 13px;border-radius:20px;background:#fffbeb;border:1px solid #fde68a;font-size:11px;font-weight:600;color:#b45309;margin-bottom:22px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite;display:inline-block;"></span>
+        Demo available — explore all four roles
+      </div>
+      <h1 style="font-size:54px;font-weight:800;color:#0f0f0a;line-height:1.1;margin-bottom:16px;letter-spacing:-.5px;">
+        The platform where<br>
+        <span style="background:linear-gradient(135deg,#b45309,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">athletes own their future</span>
+      </h1>
+      <p style="font-size:17px;color:#78786a;margin-bottom:30px;line-height:1.65;max-width:480px;margin-left:auto;margin-right:auto;">
+        NIL deals, recruiting, verified identity, and compliance — all in one platform. Athletes always free.
+      </p>
+      <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+        <button onclick="set({screen:'onboarding',onbStep:0})" class="btn btn-primary btn-lg" style="box-shadow:0 4px 16px rgba(180,83,9,.3);">Start free →</button>
+        <button onclick="set({screen:'onboarding',onbStep:0})" class="btn btn-secondary btn-lg">Explore demo</button>
+      </div>
+    </section>
+
+    <section style="max-width:820px;margin:0 auto;padding:0 24px 56px;">
+      <p style="text-align:center;font-size:11px;font-weight:600;color:#a8a898;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;">Built for everyone in the ecosystem</p>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        ${Object.entries(ROLES).map(([id,r])=>`
+          <div class="card hover" onclick="S.selRole='${id}';set({screen:'onboarding',onbStep:0})" style="border-color:${r.border};">
+            <div style="font-size:24px;margin-bottom:8px;">${r.icon}</div>
+            <div style="display:flex;align-items:center;gap:5px;margin-bottom:4px;">
+              <p style="font-weight:700;font-size:13px;">${r.label}</p>
+              ${id==='athlete'?'<span style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;background:#f0fdf4;color:#15803d;">Free</span>':''}
+            </div>
+            <p style="font-size:11px;color:#a8a898;line-height:1.4;">${r.desc}</p>
+          </div>`).join('')}
+      </div>
+    </section>
+
+    <section style="border-top:1px solid #e8e8e0;background:#fff;padding:48px 24px;">
+      <div style="max-width:820px;margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:36px;">
+        ${[
+          ['✦','Woven Token','Portable athlete identity that follows your career from high school through the pros. Powered by Fool Proof Labs.'],
+          ['🔑','FPT Credential','Revocable staff credentials. One-click lockout. Full NCAA-compliant audit trail built in.'],
+          ['🤖','AI-powered tools','Contract review in plain English, scheme-fit matching engine, and automated media labeling.'],
+        ].map(([ic,t,b])=>`<div>
+          <div style="width:38px;height:38px;border-radius:10px;background:#fffbeb;border:1px solid #fde68a;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:12px;">${ic}</div>
+          <h3 style="font-weight:700;margin-bottom:6px;">${t}</h3>
+          <p style="font-size:13px;color:#78786a;line-height:1.65;">${b}</p>
+        </div>`).join('')}
+      </div>
+    </section>
+
+    <footer style="border-top:1px solid #e8e8e0;padding:20px 24px;text-align:center;">
+      <p style="font-size:11px;color:#a8a898;">signme.app · hello@signme.app · Demo · March 2026</p>
+    </footer>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════════════════════════════════════
+function onboarding(){
+  if(S.onbStep===0) return roleSelect();
+  return roleConfirm();
+}
+
+function roleSelect(){
+  return `<div style="min-height:100vh;background:#fafaf8;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="width:100%;max-width:460px;" class="fade">
+      <div style="text-align:center;margin-bottom:26px;">
+        <div style="width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px;margin:0 auto 12px;box-shadow:0 4px 14px rgba(180,83,9,.25);">S</div>
+        <h1 style="font-size:26px;font-weight:800;margin-bottom:4px;">Sign Me</h1>
+        <p style="color:#78786a;font-size:14px;">The platform where athletes own their future</p>
+      </div>
+      <div class="card">
+        <div style="padding-bottom:12px;border-bottom:1px solid #f5f5f0;margin-bottom:14px;">
+          <h2 style="font-size:17px;font-weight:700;margin-bottom:3px;">Who are you?</h2>
+          <p style="font-size:13px;color:#78786a;">Select your role to get a personalized guided tour</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px;" id="role-grid">
+          ${Object.entries(ROLES).map(([id,r])=>`
+            <button id="rb-${id}" onclick="S.selRole='${id}';highlightRole('${id}')"
+              style="padding:14px;border-radius:12px;border:2px solid ${S.selRole===id?r.color:'#e8e8e0'};background:${S.selRole===id?r.bg:'#fafaf8'};text-align:left;transition:all .15s;position:relative;"
+              onmouseover="if(S.selRole!=='${id}')this.style.borderColor='${r.border}'"
+              onmouseout="if(S.selRole!=='${id}'){this.style.borderColor='#e8e8e0';this.style.background='#fafaf8';}">
+              <div style="font-size:22px;margin-bottom:6px;">${r.icon}</div>
+              <p style="font-weight:700;font-size:13px;margin-bottom:2px;">${r.label}</p>
+              <p style="font-size:11px;color:#a8a898;line-height:1.3;">${r.desc}</p>
+              ${id==='athlete'?'<span style="position:absolute;top:8px;right:8px;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:#f0fdf4;color:#15803d;">Free</span>':''}
+            </button>`).join('')}
+        </div>
+        <button onclick="if(S.selRole)set({onbStep:1})" class="btn btn-primary btn-lg btn-full"
+          style="box-shadow:0 2px 8px rgba(180,83,9,.2);">
+          Continue →
+        </button>
+      </div>
+      <p style="text-align:center;font-size:11px;color:#a8a898;margin-top:12px;">This is a demo. All data is simulated.</p>
+    </div>
+  </div>`;
+}
+
+function highlightRole(id){
+  Object.keys(ROLES).forEach(k=>{
+    const btn=document.getElementById(`rb-${k}`);
+    if(!btn)return;
+    if(k===id){btn.style.borderColor=ROLES[k].color;btn.style.background=ROLES[k].bg;}
+    else{btn.style.borderColor='#e8e8e0';btn.style.background='#fafaf8';}
+  });
+}
+
+function roleConfirm(){
+  const id=S.selRole||'athlete';
+  const r=ROLES[id];
+  const perks={
+    athlete:['High school recruit','College transfer','JUCO athlete','Always free — no credit card'],
+    coach:['College or HS coach','Recruiting staff','FPT credential issued','From $99/mo'],
+    brand:['NIL brands and agencies','Market scores visible','8% fee on deals','From $299/mo'],
+    admin:['Athletic directors','Compliance officers','Full audit trail','Included in Program tier'],
+  };
+  return `<div style="min-height:100vh;background:#fafaf8;display:flex;align-items:center;justify-content:center;padding:20px;">
+    <div style="width:100%;max-width:420px;" class="fade">
+      <div class="card">
+        <div style="margin:-14px -14px 14px;padding:16px 14px;border-radius:14px 14px 0 0;background:${r.bg};border-bottom:1px solid ${r.border};">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:28px;">${r.icon}</span>
+            <div><h2 style="font-weight:700;">${r.label}</h2><p style="font-size:13px;color:#78786a;">${r.desc}</p></div>
+          </div>
+        </div>
+        <p style="font-size:14px;color:#78786a;margin-bottom:14px;line-height:1.65;">
+          You'll get a guided tour of the ${r.label} dashboard. You can skip at any time.
+        </p>
+        <div style="margin-bottom:16px;">
+          ${perks[id].map(p=>`<div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">
+            <span style="color:#16a34a;font-weight:700;">✓</span>
+            <span style="font-size:13px;color:#3d3d35;">${p}</span>
+          </div>`).join('')}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="set({onbStep:0})" class="btn btn-secondary btn-md">← Back</button>
+          <button onclick="startTour('${id}')" class="btn btn-primary btn-md btn-full">Start tour →</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startTour(role){
+  const steps=TOUR[role]||[];
+  set({screen:'app',role,page:steps[0]?.pg||'home',tourStep:0,tourOn:true,selRole:role});
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// APP SHELL
+// ═══════════════════════════════════════════════════════════════════════════════
+function app(){
+  const r=ROLES[S.role];
+  return `<div style="min-height:100vh;display:flex;flex-direction:column;">
+    <header style="height:54px;background:#fff;border-bottom:1px solid #e8e8e0;display:flex;align-items:center;padding:0 10px;gap:3px;position:sticky;top:0;z-index:200;box-shadow:0 1px 3px rgba(0,0,0,.04);">
+      <div style="display:flex;align-items:center;gap:7px;margin-right:6px;flex-shrink:0;">
+        <div style="width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#b45309,#f59e0b);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;">S</div>
+        <span style="font-weight:700;font-size:13px;color:#0f0f0a;">Sign Me</span>
+      </div>
+      <nav style="display:flex;align-items:center;gap:1px;flex:1;overflow-x:auto;">
+        ${r.nav.map(n=>{
+          const isTourTarget=S.tourOn&&(TOUR[S.role]||[])[S.tourStep]?.pg===n.id;
+          return`<button class="nav-item${S.page===n.id?' on':''}" onclick="go('${n.id}')"
+            style="${isTourTarget?`background:${r.bg};color:${r.color};border:1.5px solid ${r.border};box-shadow:0 0 0 3px ${r.border},0 2px 8px rgba(0,0,0,.08);border-radius:10px;`:''}"
+          >
+            <span style="font-size:13px;">${n.icon}</span><span>${n.l}</span>
+            ${n.b?`<span class="nav-dot" style="background:${r.color}">${n.b}</span>`:''}
+            ${isTourTarget?`<span style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:${r.color};"></span>`:''}
+          </button>`;
+        }).join('')}
+      </nav>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:6px;">
+        <div style="display:flex;align-items:center;gap:5px;padding:4px 9px;border-radius:8px;font-size:11px;font-weight:600;border:1px solid ${r.border};background:${r.bg};color:${r.color};">
+          <span>${r.icon}</span><span>${r.label}</span>
+        </div>
+        <button onclick="set({screen:'landing',tourOn:false})" style="font-size:11px;color:#a8a898;padding:4px 8px;border-radius:8px;border:1px solid #e8e8e0;background:#fff;white-space:nowrap;">← Roles</button>
+      </div>
+    </header>
+    ${trialBanner()}
+    <main style="flex:1;max-width:980px;width:100%;margin:0 auto;padding:18px 14px 60px;">
+      ${page()}
+    </main>
+    ${S.tourOn?tour():''}
+    ${S.showUpgrade?upgradeModal():''}
+  </div>`;
+}
+
+function go(id){set({page:id,tourOn:false,tourDone:true});}
+
+// ── TOUR ──────────────────────────────────────────────────────────────────────
+function tour(){
+  const steps=TOUR[S.role]||[];
+  const step=steps[S.tourStep];
+  if(!step)return'';
+  const isLast=S.tourStep===steps.length-1;
+  const pct=Math.round(((S.tourStep+1)/steps.length)*100);
+  return `
+    <div style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:501;width:100%;max-width:360px;padding:0 14px;">
+      <div class="card fade" style="box-shadow:0 16px 40px rgba(0,0,0,.18),0 0 0 1px rgba(0,0,0,.06);overflow:hidden;">
+        <div style="height:3px;background:#f5f5f0;margin:-14px -14px 14px;">
+          <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#b45309,#f59e0b);transition:width .4s;"></div>
+        </div>
+        <div style="display:flex;gap:4px;margin-bottom:11px;">
+          ${steps.map((_,i)=>`<div style="height:4px;border-radius:2px;flex:${i===S.tourStep?2:1};background:${i<=S.tourStep?'#f59e0b':'#f5f5f0'};transition:all .3s;"></div>`).join('')}
+        </div>
+        <h3 style="font-weight:700;font-size:15px;margin-bottom:5px;">${step.title}</h3>
+        <p style="font-size:13px;color:#78786a;margin-bottom:14px;line-height:1.6;">${step.body}</p>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button onclick="set({tourOn:false,tourDone:true})" class="btn btn-ghost btn-sm" style="color:#a8a898;">Skip</button>
+          <div style="flex:1;"></div>
+          <button onclick="nextTour()" class="btn btn-primary btn-sm">${isLast?'Get started →':'Next →'}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function nextTour(){
+  const steps=TOUR[S.role]||[];
+  const isLast=S.tourStep>=steps.length-1;
+  if(isLast){set({tourOn:false,tourDone:true});return;}
+  const n=S.tourStep+1;
+  set({tourStep:n,page:steps[n].pg});
+}
+
+// ── TRIAL / PAYWALL HELPERS ───────────────────────────────────────────────────
+// Athletes are always free — no paywall
+function needsPaywall(){return['coach','brand','admin'].includes(S.role);}
+function isLocked(){return needsPaywall()&&S.tourDone&&!S.upgraded;}
+
+function trialBanner(){
+  if(!needsPaywall()||!S.tourDone||S.upgraded)return'';
+  const r=ROLES[S.role];
+  const prices={coach:'$99/mo',brand:'$299/mo',admin:'$799/mo'};
+  const urgency=S.trialDays<=3;
+  return `<div style="background:${urgency?'#fef2f2':'#fffbeb'};border-bottom:1px solid ${urgency?'#fecaca':'#fde68a'};padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:14px;">${urgency?'🚨':'⏳'}</span>
+      <p style="font-size:12px;font-weight:600;color:${urgency?'#dc2626':'#b45309'};">
+        ${S.trialDays} day${S.trialDays===1?'':'s'} left in your free trial
+        <span style="font-weight:400;color:${urgency?'#dc2626':'#78786a'};"> · Some features are locked until you upgrade</span>
+      </p>
+    </div>
+    <button onclick="set({showUpgrade:true})" class="btn btn-primary btn-sm" style="flex-shrink:0;font-size:12px;">
+      Upgrade — ${prices[S.role]} →
+    </button>
+  </div>`;
+}
+
+function upgradeModal(){
+  const r=ROLES[S.role];
+  const plans={
+    coach:{name:'Coach Pro',price:'$99',per:'month',color:'#4f46e5',bg:'#eef2ff',border:'#c7d2fe',features:['Full transfer portal access','Recruiting board — unlimited athletes','Coaching tracker & performance logs','Athlete messaging (logged to FPT)','Compliance inbox','Matching engine — unlimited runs','AI athlete film analysis']},
+    brand:{name:'Brand Pro',price:'$299',per:'month',color:'#9333ea',bg:'#faf5ff',border:'#e9d5ff',features:['Full athlete discovery with market scores','NIL deal offer tools','Campaign manager — unlimited deals','8% fee on closed deals (brand pays)','Audience demographic data','Verified social metrics','Priority athlete matching']},
+    admin:{name:'Program',price:'$799',per:'month',color:'#16a34a',bg:'#f0fdf4',border:'#bbf7d0',features:['All coach seats included','FPT management — verify, suspend, revoke','Full compliance audit log','NCAA-ready reporting','Institutional NIL deal tools (5% fee)','Revenue sharing management','Dedicated compliance dashboard']},
+  };
+  const plan=plans[S.role]||plans.coach;
+  return `<div style="position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(8px);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="set({showUpgrade:false})">
+    <div class="card fade" style="width:100%;max-width:440px;box-shadow:0 24px 60px rgba(0,0,0,.18);overflow:hidden;" onclick="event.stopPropagation()">
+      <div style="height:4px;background:linear-gradient(90deg,${plan.color},${plan.color}88);margin:-14px -14px 0;"></div>
+      <div style="margin:0 -14px;padding:18px 18px 16px;background:${plan.bg};border-bottom:1px solid ${plan.border};margin-bottom:16px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <h2 style="font-weight:800;font-size:20px;color:#0f0f0a;">${plan.name}</h2>
+          <button onclick="set({showUpgrade:false})" style="background:transparent;border:none;font-size:18px;color:#a8a898;line-height:1;cursor:pointer;">✕</button>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <span style="font-size:36px;font-weight:800;color:${plan.color};">${plan.price}</span>
+          <span style="font-size:14px;color:#78786a;">/ ${plan.per}</span>
+        </div>
+        <p style="font-size:12px;color:#78786a;margin-top:4px;">
+          <span style="font-weight:600;color:${plan.color};">${S.trialDays} days left</span> in your free trial · Cancel anytime
+        </p>
+      </div>
+      <p style="font-size:12px;font-weight:700;color:#a8a898;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Everything included</p>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:18px;">
+        ${plan.features.map(f=>`<div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:18px;height:18px;border-radius:50%;background:${plan.bg};border:1px solid ${plan.border};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <span style="font-size:10px;font-weight:700;color:${plan.color};">✓</span>
+          </div>
+          <span style="font-size:13px;color:#3d3d35;">${f}</span>
+        </div>`).join('')}
+      </div>
+      <button onclick="confirmUpgrade()" class="btn btn-primary btn-lg btn-full" style="background:linear-gradient(135deg,${plan.color},${plan.color}cc);box-shadow:0 4px 14px ${plan.color}44;">
+        Start free trial — ${plan.price}/${plan.per} after
+      </button>
+      <p style="text-align:center;font-size:11px;color:#a8a898;margin-top:10px;">No credit card required during trial · Cancel anytime</p>
+    </div>
+  </div>`;
+}
+
+function confirmUpgrade(){
+  set({showUpgrade:false,upgraded:true});
+  toast('🎉 Trial activated! All features unlocked.');
+}
+
+// Locked overlay — wraps any feature that requires upgrade
+function lockOverlay(featureName,desc){
+  const r=ROLES[S.role];
+  return `<div style="position:relative;border-radius:14px;overflow:hidden;">
+    <div style="filter:blur(4px) grayscale(30%);pointer-events:none;opacity:.55;">${desc}</div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(250,250,248,.7);backdrop-filter:blur(1px);">
+      <div style="background:#fff;border:1px solid #e8e8e0;border-radius:16px;padding:20px 24px;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.1);max-width:280px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:#f5f5f0;border:1px solid #e8e8e0;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:18px;">🔒</div>
+        <p style="font-weight:700;font-size:14px;color:#0f0f0a;margin-bottom:4px;">${featureName}</p>
+        <p style="font-size:12px;color:#78786a;margin-bottom:14px;line-height:1.5;">Upgrade your plan to unlock this feature</p>
+        <button onclick="set({showUpgrade:true})" class="btn btn-primary btn-sm btn-full">Upgrade to unlock →</button>
+        <p style="font-size:11px;color:#a8a898;margin-top:7px;">${S.trialDays} days left in trial</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── PAGE ROUTER ───────────────────────────────────────────────────────────────
+function page(){
+  const{role:r,page:p}=S;
+  if(r==='athlete'){
+    if(p==='home')return athHome();
+    if(p==='explore')return athExplore();
+    if(p==='deals')return athDeals();
+    if(p==='profile')return athProfile();
+    if(p==='inbox')return inbox();
+  }
+  if(r==='coach'){
+    if(p==='home')return coachHome();
+    if(p==='athletes')return portal();
+    if(p==='board')return board();
+    if(p==='inbox')return inbox();
+  }
+  if(r==='brand'){
+    if(p==='home')return brandHome();
+    if(p==='discover')return brandDiscover();
+    if(p==='campaigns')return brandCampaigns();
+    if(p==='inbox')return inbox();
+  }
+  if(r==='admin'){
+    if(p==='home')return adminHome();
+    if(p==='staff')return adminStaff();
+    if(p==='compliance')return adminCompliance();
+    if(p==='athletes')return portal();
+  }
+  return '';
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ATHLETE PAGES
+// ═══════════════════════════════════════════════════════════════════════════════
+function athHome(){
+  const conn=Object.values(S.social).filter(Boolean).length;
+  return `<div class="fade">
+    <div style="margin-bottom:18px;">
+      <h1 style="font-size:24px;font-weight:800;margin-bottom:3px;">Good morning, <span style="color:#ea580c;">Tyler</span> 👋</h1>
+      <p style="font-size:13px;color:#a8a898;">WR · Mater Dei · Class 2026 · ${conn} platforms connected</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+      ${statCard('Profile views','247','↑ 18% this week','#d97706')}
+      ${statCard('Coach interest','12','3 new today','#4f46e5')}
+      ${statCard('NIL offers','4','2 pending','#9333ea')}
+      ${statCard('Earnings','$840','Stripe ready','#16a34a')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 290px;gap:14px;">
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h2 style="font-weight:700;">Activity</h2>
+            <div style="display:flex;align-items:center;gap:5px;"><div style="width:6px;height:6px;border-radius:50%;background:#16a34a;animation:pulse 2s infinite;"></div><span style="font-size:11px;color:#a8a898;font-weight:500;">Live</span></div>
+          </div>
+          ${[
+            {icon:'👁',bg:'#eef2ff',txt:'<b>Alabama football</b> viewed your profile',t:'2 min ago',u:true},
+            {icon:'✦',bg:'#faf5ff',txt:'<b>Nike</b> sent a NIL deal — $1,200',t:'14 min ago',u:true},
+            {icon:'📋',bg:'#eef2ff',txt:'<b>Coach Harris</b> (TCU) expressed interest',t:'1 hr ago',u:false},
+            {icon:'👁',bg:'#eef2ff',txt:'<b>Ohio State</b> viewed your profile',t:'3 hrs ago',u:false},
+          ].map(f=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f0;">
+            <div style="width:32px;height:32px;border-radius:9px;background:${f.bg};display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;">${f.icon}</div>
+            <div style="flex:1;"><p style="font-size:13px;color:#3d3d35;">${f.txt}</p><p style="font-size:11px;color:#a8a898;margin-top:1px;">${f.t}</p></div>
+            ${f.u?'<div style="width:7px;height:7px;border-radius:50%;background:#4f46e5;margin-top:4px;flex-shrink:0;"></div>':''}
+          </div>`).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div class="card hover" onclick="go('explore')" style="border-color:#bbf7d0;background:linear-gradient(135deg,#f0fdf4,#fff);">
+            <p style="font-size:20px;margin-bottom:7px;">🎯</p>
+            <p style="font-weight:700;font-size:13px;color:#15803d;margin-bottom:2px;">Matching engine</p>
+            <p style="font-size:12px;color:#a8a898;">See your top program matches</p>
+          </div>
+          <div class="card hover" onclick="go('profile')" style="border-color:#e9d5ff;background:linear-gradient(135deg,#faf5ff,#fff);">
+            <p style="font-size:20px;margin-bottom:7px;">🎬</p>
+            <p style="font-weight:700;font-size:13px;color:#7e22ce;margin-bottom:2px;">AI media tools</p>
+            <p style="font-size:12px;color:#a8a898;">Upload and label film</p>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card hover" onclick="go('profile')" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fff);">
+          <p style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">✦ Market Profile</p>
+          <p style="font-size:24px;font-weight:700;color:#16a34a;margin-bottom:2px;">$800 – $2,400</p>
+          <p style="font-size:11px;color:#a8a898;margin-bottom:9px;">estimated deal value · per campaign</p>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;">
+            ${['Strong','Strong','Strong','Good','Building','Strong'].map(s=>`<span class="badge ${s==='Strong'?'g-green':s==='Good'?'g-indigo':'g-amber'}">${s}</span>`).join('')}
+          </div>
+          <p style="font-size:12px;color:#d97706;font-weight:600;">View full profile →</p>
+        </div>
+        <div class="card" style="border-color:#e9d5ff;background:#faf5ff;">
+          <p style="font-size:10px;font-weight:700;color:#9333ea;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">NIL offer waiting</p>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px;">
+            <div style="width:36px;height:36px;border-radius:10px;background:#f3e8ff;border:1px solid #e9d5ff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#9333ea;flex-shrink:0;">NK</div>
+            <div style="flex:1;"><p style="font-weight:600;font-size:13px;">Nike — 3 IG posts</p><p style="font-size:11px;color:#a8a898;">$1,200 · AI review ready</p></div>
+            <p style="font-weight:700;color:#16a34a;">$1,104</p>
+          </div>
+          <div style="display:flex;gap:7px;">
+            <button onclick="toast('Deal declined.',false)" class="btn btn-danger btn-sm">Decline</button>
+            <button onclick="openContract()" class="btn btn-primary btn-sm btn-full">Review & Accept →</button>
+          </div>
+        </div>
+        <div class="card" style="border-color:#bbf7d0;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <div><p style="font-weight:600;font-size:13px;color:#15803d;">Tax jar</p><p style="font-size:11px;color:#16a34a;">25% auto-withheld</p></div>
+            <div style="width:38px;height:20px;border-radius:10px;background:#16a34a;position:relative;flex-shrink:0;"><div style="position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.15);"></div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <span style="font-size:12px;color:#16a34a;">Set aside this year</span>
+            <span style="font-size:20px;font-weight:700;color:#15803d;">$210</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function athExplore(){
+  const tab=S.exploreTab;
+  return `<div class="fade">
+    <div style="display:flex;gap:5px;margin-bottom:16px;">
+      ${['portal','matching'].map(t=>`<button onclick="set({exploreTab:'${t}'})" style="padding:7px 16px;border-radius:10px;font-size:13px;font-weight:600;border:1px solid ${tab===t?'#e8e8e0':'transparent'};background:${tab===t?'#fff':'transparent'};box-shadow:${tab===t?'0 1px 3px rgba(0,0,0,.05)':'none'};color:${tab===t?'#0f0f0a':'#78786a'};">${t==='portal'?'Transfer Portal':'Matching Engine'}</button>`).join('')}
+    </div>
+    ${tab==='portal'?portalTab():matchTab()}
+  </div>`;
+}
+
+function portalTab(){
+  return `<div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <h2 style="font-weight:700;font-size:18px;">Transfer Portal</h2>
+      <p style="font-size:12px;color:#a8a898;">${ATHLETES.length} athletes · All divisions</p>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      ${ATHLETES.map(a=>`<div class="card hover" onclick="openAthlete('${a.id}')" style="position:relative;">
+        ${a.nil?'<span class="badge g-purple" style="position:absolute;top:8px;right:8px;font-size:9px;">NIL</span>':''}
+        <p style="font-weight:700;font-size:13px;margin-bottom:1px;padding-right:${a.nil?30:0}px;">${a.name}${a.verified?' 🔵':''}</p>
+        <p style="font-size:11px;color:#a8a898;margin-bottom:7px;">${a.pos} · ${a.school}</p>
+        <span class="badge ${SC[a.status]||'g-warm'}" style="font-size:10px;margin-bottom:6px;">${a.status}</span>
+        <div>${stars(a.stars)}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function matchTab(){
+  const matchHTML=`<div class="card" style="margin-bottom:12px;border-color:#bbf7d0;background:linear-gradient(135deg,#f0fdf4,#fff);">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+      <div>
+        <p style="font-weight:700;color:#15803d;margin-bottom:5px;">AI Matching Engine</p>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;">
+          ${['WR · Football','Power 4','5★ recruit','CA market'].map(t=>`<span style="font-size:11px;padding:2px 8px;background:#fff;border-radius:20px;border:1px solid #bbf7d0;color:#15803d;">${t}</span>`).join('')}
+        </div>
+      </div>
+      <button onclick="runMatch()" ${S.matchLoading?'disabled':''} class="btn btn-success btn-sm">
+        ${S.matchLoading?'<span style="animation:spin 1s linear infinite;display:inline-block;">◌</span> Analyzing…':'🎯 Run matching'}
+      </button>
+    </div>
+  </div>
+  <div class="card" style="padding:42px;text-align:center;">
+    <p style="font-size:32px;margin-bottom:10px;">🎯</p>
+    <p style="font-weight:700;font-size:16px;margin-bottom:6px;">Find your best-fit transfers</p>
+    <p style="font-size:13px;color:#78786a;max-width:300px;margin:0 auto;">Scores scheme fit, playing time, academics, geography, and NIL across every program.</p>
+  </div>`;
+
+  if(isLocked()){
+    return `<div>${lockOverlay('AI Matching Engine',matchHTML)}</div>`;
+  }
+
+  return `<div>
+    <div class="card" style="margin-bottom:12px;border-color:#bbf7d0;background:linear-gradient(135deg,#f0fdf4,#fff);">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+        <div>
+          <p style="font-weight:700;color:#15803d;margin-bottom:5px;">AI Matching Engine</p>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            ${['WR · Football','Power 4','5★ recruit','CA market'].map(t=>`<span style="font-size:11px;padding:2px 8px;background:#fff;border-radius:20px;border:1px solid #bbf7d0;color:#15803d;">${t}</span>`).join('')}
+          </div>
+        </div>
+        <button onclick="runMatch()" ${S.matchLoading?'disabled':''} class="btn btn-success btn-sm">
+          ${S.matchLoading?'<span style="animation:spin 1s linear infinite;display:inline-block;">◌</span> Analyzing…':'🎯 Run matching'}
+        </button>
+      </div>
+    </div>
+    ${!S.matchResults&&!S.matchLoading?`<div class="card" style="padding:42px;text-align:center;">
+      <p style="font-size:32px;margin-bottom:10px;">🎯</p>
+      <p style="font-weight:700;font-size:16px;margin-bottom:6px;">Find your best-fit programs</p>
+      <p style="font-size:13px;color:#78786a;margin-bottom:16px;max-width:300px;margin-left:auto;margin-right:auto;">Scores scheme fit, playing time, academics, geography, and NIL across every program.</p>
+      <button onclick="runMatch()" class="btn btn-primary btn-md">Run my analysis</button>
+    </div>`:''}
+    ${S.matchLoading?`<div class="card" style="padding:42px;text-align:center;">
+      <p style="font-size:28px;animation:spin 1.5s linear infinite;display:inline-block;margin-bottom:12px;">◌</p>
+      <p style="font-weight:600;margin-bottom:14px;">Analyzing your profile…</p>
+      <div style="display:flex;flex-direction:column;gap:5px;max-width:220px;margin:0 auto;text-align:left;">
+        ${['Reading profile…','Matching schemes…','Scoring depth charts…','Calculating NIL…'].map(s=>`<p style="font-size:12px;color:#16a34a;font-weight:500;">✓ ${s}</p>`).join('')}
+      </div>
+    </div>`:''}
+    ${S.matchResults&&!S.matchLoading?`<div style="display:flex;flex-direction:column;gap:9px;">
+      ${S.matchResults.map((r,i)=>`<div class="card" style="${i===0?'border-color:#bbf7d0;background:#f0fdf4':''}">
+        <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+          <div style="width:36px;height:36px;border-radius:9px;background:#f5f5f0;border:1px solid #e8e8e0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#78786a;flex-shrink:0;">${r.school.slice(0,2)}</div>
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px;flex-wrap:wrap;">
+              <span style="font-weight:700;">${r.school}</span>
+              <span style="font-size:11px;color:#a8a898;">${r.conf}</span>
+              ${r.verified?'<span class="badge g-green" style="font-size:9px;">Verified interest</span>':''}
+            </div>
+            ${r.reasons.map(re=>`<p style="font-size:12px;color:#a8a898;">· ${re}</p>`).join('')}
+          </div>
+          <div style="text-align:center;flex-shrink:0;">
+            <p style="font-size:26px;font-weight:700;color:${r.score>=80?'#16a34a':r.score>=65?'#4f46e5':'#d97706'};">${r.score}</p>
+            <p style="font-size:10px;color:#a8a898;">/ 100</p>
+          </div>
+        </div>
+        ${prog(r.score,r.score>=80?'#16a34a':r.score>=65?'#4f46e5':'#f59e0b',4)}
+      </div>`).join('')}
+    </div>`:''}
+  </div>`;
+}
+
+function runMatch(){
+  set({matchLoading:true,matchResults:null,exploreTab:'matching'});
+  setTimeout(()=>{
+    set({matchLoading:false,matchResults:PROGRAMS.map(p=>scoreP(p)).sort((a,b)=>b.score-a.score),exploreTab:'matching'});
+  },2200);
+}
+
+function athDeals(){
+  const fc={green:{bg:'#f0fdf4',b:'#bbf7d0',c:'#16a34a',i:'✓'},yellow:{bg:'#fffbeb',b:'#fde68a',c:'#d97706',i:'!'},red:{bg:'#fef2f2',b:'#fecaca',c:'#dc2626',i:'✕'}};
+  const sm={pending:{bg:'#faf5ff',b:'#e9d5ff',c:'#9333ea',l:'Awaiting you'},active:{bg:'#eef2ff',b:'#c7d2fe',c:'#4f46e5',l:'In progress'},completed:{bg:'#f0fdf4',b:'#bbf7d0',c:'#16a34a',l:'Completed'}};
+  const deals=[
+    {id:'d1',brand:'Nike',desc:'3 Instagram posts — Air Max',value:1200,recv:1104,status:'pending',flags:[{t:'green',c:'Payment terms'},{t:'yellow',c:'IP ownership'},{t:'red',c:'Auto-renewal'}]},
+    {id:'d2',brand:'Gatorade',desc:'TikTok campaign — 5 videos',value:2500,recv:2300,status:'active',prog:60},
+    {id:'d3',brand:'Under Armour',desc:'Season ambassador',value:15000,recv:13800,status:'completed',prog:100},
+  ];
+  return `<div class="fade">
+    <div style="margin-bottom:14px;"><h2 style="font-weight:700;font-size:18px;">My NIL Deals</h2><p style="font-size:13px;color:#a8a898;">Brand offers · AI contract review · Stripe payouts</p></div>
+    <div class="card" style="border-color:#bbf7d0;background:#f0fdf4;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="flex:1;"><p style="font-weight:600;font-size:13px;color:#15803d;">Stripe connected ✓</p><p style="font-size:11px;color:#16a34a;">Payouts enabled · Athletes keep 100%</p></div>
+      <div style="text-align:right;"><p style="font-size:11px;color:#16a34a;">Available</p><p style="font-size:20px;font-weight:700;color:#15803d;">$840</p></div>
+    </div>
+    ${deals.map(d=>{const s=sm[d.status];return`<div class="card" style="margin-bottom:10px;${d.status==='pending'?'border-color:#e9d5ff;':''}">
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:${d.flags?'10':'0'}px;">
+        <div style="width:40px;height:40px;border-radius:11px;background:#f3e8ff;border:1px solid #e9d5ff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#9333ea;flex-shrink:0;">${d.brand.slice(0,2)}</div>
+        <div style="flex:1;"><p style="font-weight:700;font-size:14px;margin-bottom:4px;">${d.brand} — ${d.desc}</p><span class="badge" style="background:${s.bg};color:${s.c};border-color:${s.b};">${s.l}</span></div>
+        <div style="text-align:right;"><p style="font-size:20px;font-weight:700;color:#16a34a;">${cur(d.recv)}</p><p style="font-size:10px;color:#a8a898;">you receive</p></div>
+      </div>
+      ${d.flags?`<div style="background:#fafaf8;border:1px solid #f5f5f0;border-radius:11px;padding:10px;margin-bottom:10px;">
+        <p style="font-size:10px;font-weight:700;color:#a8a898;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px;">AI Contract Review</p>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px;">${d.flags.map(f=>`<span class="badge" style="background:${fc[f.t].bg};color:${fc[f.t].c};border-color:${fc[f.t].b};">${fc[f.t].i} ${f.c}</span>`).join('')}</div>
+        <div style="display:flex;gap:7px;">
+          <button onclick="toast('Deal declined.',false)" class="btn btn-danger btn-sm">Decline</button>
+          <button onclick="openContract()" class="btn btn-primary btn-sm btn-full">Review & Accept →</button>
+        </div>
+      </div>`:''}
+      ${d.prog!==undefined?`<div>${prog(d.prog,d.status==='completed'?'#16a34a':'#4f46e5',4)}<p style="font-size:11px;color:#a8a898;margin-top:3px;">${d.prog}% complete</p></div>`:''}
+    </div>`;}).join('')}
+  </div>`;
+}
+
+function athProfile(){
+  const PLATS=[{id:'instagram',l:'Instagram',icon:'📸',c:'#E1306C'},{id:'tiktok',l:'TikTok',icon:'♪',c:'#ff2d55'},{id:'youtube',l:'YouTube',icon:'▶',c:'#ff0000'},{id:'twitter',l:'Twitter/X',icon:'𝕏',c:'#1d9bf0'},{id:'rivals',l:'Rivals',icon:'⭐',c:'#f59e0b'},{id:'hudl',l:'Hudl',icon:'🎬',c:'#ff6900'}];
+  const DIMS=[
+    {l:'Social reach',st:'strong',pct:85,d:'78.4K followers · 2 platforms connected'},
+    {l:'Engagement rate',st:'strong',pct:76,d:'6.1% avg — top tier for premium brands'},
+    {l:'Sport & position',st:'strong',pct:95,d:'Football · WR · HS',fixed:true},
+    {l:'Recruiting profile',st:'strong',pct:90,d:'5★ · #3 nationally'},
+    {l:'Content quality',st:'building',pct:72,d:'2 films · avg quality 88/100'},
+    {l:'Market presence',st:'strong',pct:90,d:'Southern California · Full exclusivity'},
+  ];
+  const SC2={strong:{bg:'#f0fdf4',c:'#15803d',bar:'#16a34a'},good:{bg:'#eef2ff',c:'#4338ca',bar:'#4f46e5'},building:{bg:'#fffbeb',c:'#b45309',bar:'#f59e0b'},incomplete:{bg:'#fef2f2',c:'#dc2626',bar:'#dc2626'}};
+  return `<div class="fade">
+    <div style="margin-bottom:16px;"><h2 style="font-weight:700;font-size:20px;margin-bottom:3px;">Market Profile</h2><p style="font-size:13px;color:#a8a898;">Tyler Brooks · WR · Mater Dei · HS · Class 2026</p></div>
+    <div style="display:grid;grid-template-columns:1fr 270px;gap:14px;">
+      <div>
+        <div class="card" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fff);margin-bottom:12px;">
+          <p style="font-size:10px;font-weight:700;color:#d97706;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Estimated deal value</p>
+          <p style="font-size:28px;font-weight:700;color:#16a34a;margin-bottom:2px;">$800 – $2,400</p>
+          <p style="font-size:12px;color:#a8a898;margin-bottom:10px;">per campaign · you keep 100%</p>
+          <div style="display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid #fde68a;">
+            <p style="font-size:22px;font-weight:700;color:#16a34a;">${DIMS.filter(d=>d.st==='strong'||d.st==='good').length}/6</p>
+            <p style="font-size:12px;color:#a8a898;">dimensions strong or good</p>
+          </div>
+        </div>
+        <div class="card" style="border-color:#fde68a;background:#fffbeb;margin-bottom:12px;">
+          <div style="display:flex;align-items:flex-start;gap:8px;">
+            <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;margin-top:4px;position:relative;">
+              <div style="position:absolute;inset:-3px;border-radius:50%;border:1px solid #f59e0b;animation:ping 1.5s ease-out infinite;"></div>
+            </div>
+            <div>
+              <p style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:3px;">Best next action · Content quality</p>
+              <p style="font-size:13px;color:#78786a;line-height:1.5;">Upload more film — game, practice, and training content all improve your score</p>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="border-color:#fde68a;background:linear-gradient(135deg,#fffbeb,#fff);margin-bottom:12px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <div><p style="font-size:11px;font-weight:700;color:#d97706;">WOVEN TOKEN</p><p style="font-size:10px;color:#a8a898;margin-top:1px;">Powered by Fool Proof Labs</p></div>
+            <span class="badge g-amber" style="font-size:10px;">Coming soon</span>
+          </div>
+          <p style="font-size:11px;color:#a8a898;font-family:monospace;margin-bottom:7px;">WT_1748491029_a7f3k9b</p>
+          <p style="font-size:12px;color:#78786a;line-height:1.65;">Portable verified identity that follows your career from high school through the pros. Athlete-owned forever. On-chain when ready.</p>
+          <div style="display:flex;align-items:center;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid #fde68a;">
+            <div style="width:5px;height:5px;border-radius:50%;background:#f59e0b;animation:pulse 2s infinite;"></div>
+            <p style="font-size:10px;color:#d97706;">ERC-721 on-chain path · Fool Proof Labs FPT patent</p>
+          </div>
+        </div>
+        <div class="card">
+          <p style="font-size:10px;font-weight:700;color:#a8a898;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;">Brand appeal dimensions</p>
+          ${DIMS.map(d=>{const s=SC2[d.st];return`<div style="margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <span style="font-size:13px;font-weight:500;">${d.l}</span>
+              <span class="badge" style="background:${s.bg};color:${s.c};border-color:${s.bg};font-size:10px;">${d.st.charAt(0).toUpperCase()+d.st.slice(1)}</span>
+            </div>
+            ${prog(d.pct,s.bar,4)}
+            <p style="font-size:11px;color:#a8a898;margin-top:3px;">${d.fixed?'🔒 Fixed · ':''}${d.d}</p>
+          </div>`;}).join('')}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card">
+          <p style="font-size:10px;font-weight:700;color:#a8a898;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Connected platforms</p>
+          ${PLATS.map(p=>{const conn=S.social[p.id];const loading=S.connecting===p.id;return`<div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #f5f5f0;">
+            <span style="font-size:15px;width:20px;text-align:center;">${p.icon}</span>
+            <span style="flex:1;font-size:13px;color:${conn?p.c:'#a8a898'};">${p.l}</span>
+            ${loading?'<span style="font-size:12px;color:#a8a898;animation:spin 1s linear infinite;display:inline-block;">◌</span>':conn?`<button onclick="S.social['${p.id}']=false;set({})" style="font-size:11px;color:#d4d4c8;background:transparent;border:none;cursor:pointer;">✓ connected</button>`:`<button onclick="connectP('${p.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Connect</button>`}
+          </div>`;}).join('')}
+        </div>
+        <div class="card" style="font-size:12px;color:#a8a898;line-height:1.65;">
+          Brands see your deal value estimate. They do not see a numerical score.
+        </div>
+        <div class="card">
+          <p style="font-size:10px;font-weight:700;color:#a8a898;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Uploaded film</p>
+          ${S.mediaFiles.map(f=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f5f5f0;">
+            <span style="font-size:16px;flex-shrink:0;">🎬</span>
+            <div style="flex:1;min-width:0;"><p style="font-size:11px;color:#78786a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.file}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:2px;margin-top:2px;">${f.tags.map(t=>`<span style="font-size:9px;padding:1px 5px;border-radius:3px;background:#f5f5f0;color:#78786a;">${t}</span>`).join('')}</div></div>
+            <span style="font-weight:700;font-size:13px;color:${f.quality>=85?'#16a34a':'#4f46e5'};flex-shrink:0;">${f.quality}</span>
+          </div>`).join('')}
+          <button onclick="addFilm()" class="btn btn-secondary btn-sm btn-full" style="margin-top:8px;">+ Upload film</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function connectP(id){S.connecting=id;set({});setTimeout(()=>{S.social[id]=true;S.connecting=null;set({});toast(`${id.charAt(0).toUpperCase()+id.slice(1)} connected! Market Profile updated.`);},1400);}
+function addFilm(){toast('Uploading…');setTimeout(()=>{S.mediaFiles=[...S.mediaFiles,{file:`game_film_${Date.now()}.mp4`,quality:88,tags:['Game film','Red zone']}];set({});toast('✓ Film labeled and added to your profile.');},1800);}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// COACH PAGES
+// ═══════════════════════════════════════════════════════════════════════════════
+function coachHome(){
+  const SC3={'Identified':'#78786a','Film Review':'#5a5a50','Contacted':'#4f46e5','Official Visit':'#9333ea','Offered':'#d97706','Committed':'#16a34a'};
+  return `<div class="fade">
+    <div class="card" style="border-color:#bbf7d0;background:#f0fdf4;display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <div style="width:36px;height:36px;border-radius:10px;background:#dcfce7;border:1px solid #bbf7d0;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔑</div>
+      <div style="flex:1;"><p style="font-weight:600;font-size:13px;color:#15803d;">FPT Active — TCU Athletic Department</p><p style="font-size:11px;color:#16a34a;font-family:monospace;">FPT_tcu_1748… · Offensive Coordinator · .edu verified ✓</p></div>
+      <span class="badge g-green">● Active</span>
+    </div>
+    <div style="margin-bottom:16px;"><h1 style="font-size:24px;font-weight:800;margin-bottom:3px;">Recruiting <span style="color:#4f46e5;">command</span></h1><p style="font-size:13px;color:#a8a898;">TCU · Offensive Coordinator · Football · D1</p></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+      ${statCard('On board','11','6 with offers','#4f46e5')}
+      ${statCard('New in portal','23','Since yesterday','#9333ea')}
+      ${statCard('Watchlist',S.watchlist.length||'8','2 updates','#d97706')}
+      ${statCard('Messages sent','47','12 replied','#16a34a')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 270px;gap:14px;">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h2 style="font-weight:700;">Pipeline</h2>
+          <button onclick="go('board')" style="font-size:12px;color:#4f46e5;font-weight:600;background:transparent;border:none;cursor:pointer;">View board →</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-bottom:14px;">
+          ${['Identified','Film Review','Contacted','Official Visit','Offered','Committed'].map((s,i)=>`<div style="background:#fafaf8;border:1px solid #f5f5f0;border-radius:9px;padding:7px 4px;text-align:center;">
+            <p style="font-size:9px;color:#a8a898;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.split(' ')[0]}</p>
+            <p style="font-size:17px;font-weight:700;color:${SC3[s]};">${[1,2,3,1,2,1][i]}</p>
+          </div>`).join('')}
+        </div>
+        ${ATHLETES.slice(0,4).map(a=>`<div style="display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid #f5f5f0;">
+          <div style="flex:1;"><p style="font-weight:600;font-size:13px;">${a.name}</p><p style="font-size:11px;color:#a8a898;">${a.pos} · ${a.school}</p></div>
+          <span class="badge g-indigo" style="font-size:10px;">A+</span>
+          <span style="font-size:11px;color:${S.board[a.id]?SC3[S.board[a.id]]:'#d4d4c8'};font-weight:600;">${S.board[a.id]||'—'}</span>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card">
+          <p style="font-weight:700;font-size:13px;margin-bottom:9px;">Watchlist alerts</p>
+          ${[{n:'Tyler Brooks',u:'Status → Receiving Offers',t:'1hr ago',c:'#d97706'},{n:'Marcus Williams',u:'Profile updated',t:'2hr ago',c:'#16a34a'}].map(a=>`<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid #f5f5f0;">
+            <div style="width:6px;height:6px;border-radius:50%;background:${a.c};margin-top:4px;flex-shrink:0;"></div>
+            <div><p style="font-size:12px;color:#3d3d35;"><b>${a.n}</b> — ${a.u}</p><p style="font-size:10px;color:#a8a898;">${a.t}</p></div>
+          </div>`).join('')}
+        </div>
+        <div class="card" style="border-color:#e9d5ff;background:#faf5ff;">
+          <p style="font-size:10px;font-weight:700;color:#9333ea;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">School NIL deal</p>
+          <p style="font-size:12px;color:#78786a;margin-bottom:9px;">Send a targeted NIL offer on behalf of your program. 5% fee.</p>
+          <button onclick="toast('NIL offer modal!')" class="btn btn-primary btn-sm btn-full">Create NIL offer</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function portal(){
+  const readOnly=S.role==='admin';
+  return `<div class="fade">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+      <div><h2 style="font-weight:700;font-size:18px;">Athletes</h2><p style="font-size:12px;color:#a8a898;">${ATHLETES.length} athletes${readOnly?' · Read-only view':''}</p></div>
+    </div>
+    ${readOnly?'<div class="card" style="border-color:#bbf7d0;background:#f0fdf4;display:flex;align-items:center;gap:7px;padding:9px 12px;margin-bottom:12px;"><span style="color:#16a34a;">🔒</span><p style="font-size:12px;color:#15803d;">Admin view is read-only. Contact coaching staff to take action on athlete profiles.</p></div>':''}
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+      ${ATHLETES.map(a=>`<div class="card hover" onclick="openAthlete('${a.id}')" style="position:relative;">
+        ${a.nil?'<span class="badge g-purple" style="position:absolute;top:8px;right:8px;font-size:9px;">NIL</span>':''}
+        <p style="font-weight:700;font-size:13px;margin-bottom:1px;padding-right:${a.nil?30:0}px;">${a.name}</p>
+        <p style="font-size:11px;color:#a8a898;margin-bottom:7px;">${a.pos} · ${a.school}</p>
+        <span class="badge ${SC[a.status]||'g-warm'}" style="font-size:10px;margin-bottom:7px;">${a.status}</span>
+        ${!readOnly&&S.board[a.id]?`<p style="font-size:10px;font-weight:700;color:#4f46e5;">⬤ ${S.board[a.id]}</p>`:!readOnly?`<button onclick="event.stopPropagation();S.board['${a.id}']='Identified';render();toast('${a.name} added to board!')" style="font-size:11px;color:#a8a898;background:transparent;border:none;cursor:pointer;">+ Add to board</button>`:''}
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function board(){
+  const SC3={'Identified':'#78786a','Film Review':'#5a5a50','Contacted':'#4f46e5','Official Visit':'#9333ea','Offered':'#d97706','Committed':'#16a34a'};
+  const BD={'Identified':[{n:'DeShawn Carter',p:'WR·GT',g:'B+'}],'Film Review':[{n:'Tyler Brooks',p:'WR·Mater Dei',g:'A+'},{n:'Priya Nair',p:'MID·Stanford',g:'A-'}],'Contacted':[{n:'Jaylen Moore',p:'RB·Tyler JC',g:'B+'},{n:'Jordan Lee',p:'PG·Duke',g:'A'}],'Official Visit':[{n:'Marcus Williams',p:'QB·Alabama',g:'A+'}],'Offered':[],'Committed':[{n:'Aaliyah Davis',p:'SF·UConn',g:'A'}]};
+  const boardHTML=`<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+    <div><h2 style="font-weight:700;font-size:18px;">Recruiting Board</h2><p style="font-size:12px;color:#a8a898;">FPT-verified · coaches only</p></div>
+    <div style="display:flex;gap:7px;">
+      <button onclick="toast('Bulk message sent!')" class="btn btn-secondary btn-sm">📨 Bulk message</button>
+      <button onclick="toast('Exported!')" class="btn btn-secondary btn-sm">↓ Export</button>
+    </div>
+  </div>
+  <div style="overflow-x:auto;padding-bottom:12px;">
+    <div style="display:flex;gap:10px;min-width:max-content;">
+      ${['Identified','Film Review','Contacted','Official Visit','Offered','Committed'].map(stage=>{const aths=BD[stage]||[];return`<div style="width:155px;background:#fafaf8;border:1px solid #e8e8e0;border-radius:14px;padding:10px;">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:9px;">
+          <div style="width:7px;height:7px;border-radius:50%;background:${SC3[stage]};flex-shrink:0;"></div>
+          <span style="font-size:12px;font-weight:700;color:#3d3d35;flex:1;">${stage}</span>
+          <span style="font-size:11px;color:#a8a898;">${aths.length}</span>
+        </div>
+        ${aths.length===0?'<div style="text-align:center;padding:12px;font-size:11px;color:#d4d4c8;">Empty</div>':''}
+        ${aths.map(a=>`<div style="background:#fff;border:1px solid #e8e8e0;border-radius:9px;padding:8px;margin-bottom:6px;box-shadow:0 1px 2px rgba(0,0,0,.04);">
+          <p style="font-weight:700;font-size:12px;margin-bottom:2px;">${a.n}</p>
+          <p style="font-size:10px;color:#a8a898;margin-bottom:5px;">${a.p}</p>
+          <span class="badge g-indigo" style="font-size:10px;">${a.g}</span>
+        </div>`).join('')}
+      </div>`;}).join('')}
+    </div>
+  </div>`;
+  return `<div class="fade">
+    ${isLocked()?lockOverlay('Recruiting Board',boardHTML):boardHTML}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BRAND PAGES
+// ═══════════════════════════════════════════════════════════════════════════════
+function brandHome(){
+  const sm2={pending_athlete:{bg:'#faf5ff',b:'#e9d5ff',c:'#9333ea',l:'Awaiting athlete'},active:{bg:'#eef2ff',b:'#c7d2fe',c:'#4f46e5',l:'In progress'},completed:{bg:'#f0fdf4',b:'#bbf7d0',c:'#16a34a',l:'Completed'}};
+  const bDeals=[{athlete:'Tyler Brooks',desc:'3 IG posts — Nike',value:1200,status:'pending_athlete',prg:0},{athlete:'Jordan Lee',desc:'TikTok campaign',value:2500,status:'active',prg:60},{athlete:'Aaliyah Davis',desc:'Season ambassador',value:3000,status:'completed',prg:100}];
+  return `<div class="fade">
+    <div style="margin-bottom:16px;"><h1 style="font-size:24px;font-weight:800;margin-bottom:3px;">Campaign <span style="color:#9333ea;">manager</span></h1><p style="font-size:13px;color:#a8a898;">Nike · Brand Pro · 8% platform fee</p></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+      ${statCard('Active deals','6','2 pending athlete','#9333ea')}
+      ${statCard('Total spend','$8,400','This quarter','#16a34a')}
+      ${statCard('Athletes matched','143','NIL-ready','#4f46e5')}
+      ${statCard('Platform fee','8%','Brand pays only','#d97706')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 270px;gap:14px;">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <h2 style="font-weight:700;">Active campaigns</h2>
+          <button onclick="go('campaigns')" style="font-size:12px;color:#9333ea;font-weight:600;background:transparent;border:none;cursor:pointer;">View all →</button>
+        </div>
+        ${bDeals.map(d=>{const s=sm2[d.status];return`<div style="background:#fafaf8;border:1px solid #f5f5f0;border-radius:12px;padding:11px;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;">
+            <div style="width:32px;height:32px;border-radius:9px;background:#f3e8ff;border:1px solid #e9d5ff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#9333ea;flex-shrink:0;">${d.athlete.slice(0,2)}</div>
+            <div style="flex:1;min-width:0;"><p style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.athlete}</p><p style="font-size:11px;color:#a8a898;">${d.desc}</p></div>
+            <div style="text-align:right;flex-shrink:0;"><p style="font-weight:700;font-size:14px;color:#16a34a;">${cur(d.value)}</p><span class="badge" style="background:${s.bg};color:${s.c};border-color:${s.b};font-size:9px;">${s.l}</span></div>
+          </div>
+          ${prog(d.prg,d.status==='completed'?'#16a34a':'#4f46e5',4)}
+        </div>`;}).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div class="card">
+          <p style="font-weight:700;font-size:13px;margin-bottom:9px;">Find athletes</p>
+          ${[['Sport','Football'],['Min followers','10K+'],['Category','Apparel']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f0;"><span style="font-size:13px;color:#78786a;">${k}</span><span style="font-size:13px;font-weight:600;">${v}</span></div>`).join('')}
+          <div style="background:#fafaf8;border:1px solid #f5f5f0;border-radius:10px;padding:10px;text-align:center;margin:10px 0;">
+            <p style="font-size:20px;font-weight:700;color:#9333ea;">143</p>
+            <p style="font-size:11px;color:#a8a898;">athletes match</p>
+          </div>
+          <button onclick="go('discover')" class="btn btn-primary btn-sm btn-full">Browse athletes →</button>
+        </div>
+        <div class="card">
+          <p style="font-weight:700;font-size:13px;margin-bottom:9px;">Spend breakdown</p>
+          ${[['Athletes (92%)','$7,700','#16a34a'],['Platform fee (8%)','$700','#9333ea']].map(([l,v,c])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f5f5f0;"><span style="font-size:13px;color:#78786a;">${l}</span><span style="font-size:13px;font-weight:700;color:${c};">${v}</span></div>`).join('')}
+          <div style="display:flex;justify-content:space-between;padding:6px 0;"><span style="font-size:13px;font-weight:700;">Total</span><span style="font-size:13px;font-weight:700;">$8,400</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function brandDiscover(){
+  const lockedCard=(a)=>`<div class="card hover" onclick="openAthlete('${a.id}')">
+    <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+      <span class="badge ${SC[a.status]||'g-warm'}" style="font-size:10px;">${a.status}</span>
+      <span class="badge g-purple" style="font-size:9px;">✦ NIL</span>
+    </div>
+    <p style="font-weight:700;font-size:14px;margin-bottom:2px;">${a.name}</p>
+    <p style="font-size:12px;color:#a8a898;margin-bottom:8px;">${a.pos} · ${a.school}</p>
+    ${a.followers?`<p style="font-weight:700;font-size:14px;color:#9333ea;margin-bottom:1px;">${a.followers}</p><p style="font-size:11px;color:#a8a898;margin-bottom:8px;">${a.eng} engagement</p>`:''}
+    ${isLocked()?
+      `<div style="position:relative;border-radius:10px;overflow:hidden;margin-bottom:8px;">
+        <div style="filter:blur(3px);pointer-events:none;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <p style="font-size:11px;color:#a8a898;flex-shrink:0;">Market score</p>
+            <div style="flex:1;">${prog(a.ms,'#9333ea',4)}</div>
+            <span style="font-weight:700;font-size:13px;color:#9333ea;">${a.ms}</span>
+          </div>
+        </div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(250,245,255,.85);">
+          <button onclick="event.stopPropagation();set({showUpgrade:true})" style="font-size:11px;font-weight:700;color:#9333ea;background:#fff;border:1px solid #e9d5ff;border-radius:8px;padding:4px 10px;cursor:pointer;">🔒 Upgrade to see score</button>
+        </div>
+      </div>`
+    :
+      `<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+        <p style="font-size:11px;color:#a8a898;flex-shrink:0;">Market score</p>
+        <div style="flex:1;">${prog(a.ms,'#9333ea',4)}</div>
+        <span style="font-weight:700;font-size:13px;color:#9333ea;flex-shrink:0;">${a.ms}</span>
+      </div>`
+    }
+    <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px;">${a.cats.map(c=>`<span style="font-size:10px;padding:2px 7px;border-radius:20px;background:#faf5ff;color:#9333ea;border:1px solid #e9d5ff;">${c}</span>`).join('')}</div>
+    ${isLocked()?
+      `<button onclick="event.stopPropagation();set({showUpgrade:true})" class="btn btn-secondary btn-sm btn-full" style="border-color:#e9d5ff;color:#9333ea;">🔒 Upgrade to send offer</button>`
+    :
+      `<button onclick="event.stopPropagation();toast('NIL offer sent to ${a.name}!')" class="btn btn-primary btn-sm btn-full">Send NIL offer →</button>`
+    }
+  </div>`;
+
+  return `<div class="fade">
+    <div style="margin-bottom:12px;"><h2 style="font-weight:700;font-size:18px;">Discover Athletes</h2><p style="font-size:12px;color:#a8a898;">NIL-ready · Market scores visible to brands only</p></div>
+    <div class="card" style="border-color:#e9d5ff;background:#faf5ff;display:flex;align-items:center;gap:7px;padding:9px 12px;margin-bottom:12px;">
+      <span>🔒</span>
+      <p style="font-size:12px;color:#7e22ce;">Market scores are private — athletes see deal value ranges, not this number.</p>
+      ${isLocked()?`<button onclick="set({showUpgrade:true})" class="btn btn-primary btn-sm" style="margin-left:auto;flex-shrink:0;font-size:11px;">Upgrade to unlock</button>`:''}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      ${ATHLETES.filter(a=>a.nil).map(a=>lockedCard(a)).join('')}
+    </div>
+  </div>`;
+}
+
+function brandCampaigns(){
+  const secs=[
+    {l:'Active',c:'#4f46e5',deals:[{a:'Jordan Lee',d:'TikTok campaign',v:2500,prg:60}]},
+    {l:'Pending athlete',c:'#9333ea',deals:[{a:'Tyler Brooks',d:'Instagram posts',v:1200,prg:0}]},
+    {l:'Completed',c:'#16a34a',deals:[{a:'Aaliyah Davis',d:'Brand ambassador',v:3000,prg:100}]},
+  ];
+  const inner=`<div style="margin-bottom:14px;"><h2 style="font-weight:700;font-size:18px;">Campaigns</h2><p style="font-size:12px;color:#a8a898;">3 deals · $6,700 paid to athletes</p></div>
+    ${secs.map(s=>`<div style="margin-bottom:16px;">
+      <p style="font-size:10px;font-weight:700;color:${s.c};text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">${s.l} · ${s.deals.length}</p>
+      ${s.deals.map(d=>`<div class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="width:36px;height:36px;border-radius:10px;background:#f3e8ff;border:1px solid #e9d5ff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#9333ea;flex-shrink:0;">${d.a.slice(0,2)}</div>
+        <div style="flex:1;min-width:0;"><p style="font-weight:700;font-size:13px;">${d.a} — ${d.d}</p>${prog(d.prg,s.c,4)}</div>
+        <p style="font-size:17px;font-weight:700;color:#16a34a;flex-shrink:0;">${cur(d.v)}</p>
+      </div>`).join('')}
+    </div>`).join('')}`;
+  return `<div class="fade">${isLocked()?lockOverlay('Campaign Manager',inner):inner}</div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADMIN PAGES
+// ═══════════════════════════════════════════════════════════════════════════════
+function adminHome(){
+  const counts={active:S.staffList.filter(s=>s.status==='active').length,pend:S.staffList.filter(s=>s.status==='pending_verification').length,susp:S.staffList.filter(s=>s.status==='suspended').length,rev:S.staffList.filter(s=>s.status==='revoked').length};
+  return `<div class="fade">
+    <div style="margin-bottom:16px;"><h1 style="font-size:24px;font-weight:800;margin-bottom:3px;">University <span style="color:#16a34a;">admin</span></h1><p style="font-size:13px;color:#a8a898;">TCU Athletic Department · tcu.edu</p></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;">
+      ${statCard('Active staff',counts.active,'','#16a34a')}
+      ${statCard('Pending verify',counts.pend,'','#d97706')}
+      ${statCard('Suspended',counts.susp,'','#d97706')}
+      ${statCard('Revoked',counts.rev,'','#dc2626')}
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h2 style="font-weight:700;">Staff FPT overview</h2>
+        <button onclick="go('staff')" style="font-size:12px;color:#16a34a;font-weight:600;background:transparent;border:none;cursor:pointer;">View all →</button>
+      </div>
+      ${S.staffList.slice(0,4).map(s=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f0;flex-wrap:wrap;">
+        <div style="width:36px;height:36px;border-radius:10px;background:#eef2ff;border:1px solid #c7d2fe;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">👤</div>
+        <div style="flex:1;"><p style="font-weight:600;font-size:13px;">${s.name} <span style="font-weight:400;font-size:11px;color:#a8a898;">${s.role}</span></p><p style="font-size:11px;color:#a8a898;">${s.dept}</p></div>
+        <span class="badge ${FC[s.status]}">${FL[s.status]}</span>
+      </div>`).join('')}
+      <button onclick="go('staff')" class="btn btn-secondary btn-sm btn-full" style="margin-top:10px;">Manage all staff FPTs →</button>
+    </div>
+  </div>`;
+}
+
+function adminStaff(){
+  const FILTERS=[{id:'all',l:`All (${S.staffList.length})`},{id:'active',l:`Active (${S.staffList.filter(s=>s.status==='active').length})`},{id:'pending_verification',l:`Pending (${S.staffList.filter(s=>s.status==='pending_verification').length})`},{id:'suspended',l:`Suspended (${S.staffList.filter(s=>s.status==='suspended').length})`},{id:'revoked',l:`Revoked (${S.staffList.filter(s=>s.status==='revoked').length})`}];
+  const filtered=S.adminFilter==='all'?S.staffList:S.staffList.filter(s=>s.status===S.adminFilter);
+  return `<div class="fade">
+    <div style="margin-bottom:14px;"><h2 style="font-weight:700;font-size:18px;">Staff FPT Management</h2><p style="font-size:12px;color:#a8a898;">tcu.edu · Revoke access instantly · All actions logged</p></div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;">
+      ${FILTERS.map(f=>`<button onclick="set({adminFilter:'${f.id}'})" style="padding:5px 12px;border-radius:10px;font-size:12px;font-weight:600;border:1px solid ${S.adminFilter===f.id?'#e8e8e0':'transparent'};background:${S.adminFilter===f.id?'#fff':'transparent'};box-shadow:${S.adminFilter===f.id?'0 1px 3px rgba(0,0,0,.05)':'none'};color:${S.adminFilter===f.id?'#0f0f0a':'#78786a'};">${f.l}</button>`).join('')}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:9px;">
+      ${filtered.map(s=>`<div class="card">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div style="width:40px;height:40px;border-radius:11px;background:#eef2ff;border:1px solid #c7d2fe;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">👤</div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-weight:700;font-size:14px;">${s.name} <span style="font-weight:400;font-size:12px;color:#a8a898;">${s.role}</span></p>
+            <p style="font-size:12px;color:#a8a898;">${s.dept}${s.reason?` · <span style="color:#dc2626;">${s.reason}</span>`:''}</p>
+            <p style="font-size:10px;color:#d4d4c8;font-family:monospace;">${s.token}…</p>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="badge ${FC[s.status]}">${FL[s.status]}</span>
+            ${isLocked()?
+              `<button onclick="set({showUpgrade:true})" class="btn btn-secondary btn-sm" style="font-size:11px;">🔒 Upgrade to manage</button>`
+            :
+              `${s.status==='active'?`<button onclick="openRevoke('${s.id}','suspend')" class="btn btn-secondary btn-sm">Suspend</button><button onclick="openRevoke('${s.id}','revoke')" class="btn btn-danger btn-sm">Revoke FPT</button>`:''}
+              ${s.status==='pending_verification'?`<button onclick="verifyS('${s.id}')" class="btn btn-success btn-sm">Verify</button>`:''}
+              ${['suspended','revoked'].includes(s.status)?`<button onclick="reinstateS('${s.id}')" class="btn btn-success btn-sm">Reinstate</button>`:''}`
+            }
+          </div>
+        </div>
+        ${s.status==='active'?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:10px;border-top:1px solid #f5f5f0;">
+          ${['Message athletes','View profiles','Make offers','Recruiting board'].map(p=>`<span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">✓ ${p}</span>`).join('')}
+        </div>`:''}
+        ${s.status==='suspended'?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px;padding-top:10px;border-top:1px solid #f5f5f0;">
+          <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;">✕ Message athletes</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;">✕ Make offers</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:20px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;">✓ View portal</span>
+        </div>`:''}
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function adminCompliance(){
+  const auditInner=`<div style="margin-bottom:14px;"><h2 style="font-weight:700;font-size:18px;">Compliance Dashboard</h2><p style="font-size:12px;color:#a8a898;">All staff actions logged · FPT audit trail</p></div>
+    <div class="card" style="margin-bottom:12px;">
+      <p style="font-weight:700;font-size:13px;margin-bottom:10px;">FPT audit log</p>
+      ${S.auditLog.map(e=>`<div style="display:flex;align-items:flex-start;gap:9px;padding:9px 0;border-bottom:1px solid #f5f5f0;">
+        <span style="font-size:16px;flex-shrink:0;">${e.icon}</span>
+        <div style="flex:1;"><p style="font-size:13px;color:#3d3d35;">${e.txt}</p><p style="font-size:10px;color:#a8a898;font-family:monospace;margin-top:2px;">${e.time}</p></div>
+        <div style="width:7px;height:7px;border-radius:50%;margin-top:4px;flex-shrink:0;background:${e.c};"></div>
+      </div>`).join('')}
+    </div>
+    <div class="card">
+      <p style="font-weight:700;font-size:13px;margin-bottom:10px;">NCAA compliance summary</p>
+      ${[['Staff with active FPTs',S.staffList.filter(s=>s.status==='active').length,'#16a34a'],['Athletes contacted this week','14','#4f46e5'],['NIL deals facilitated','3','#9333ea'],['Compliance flags','0','#16a34a']].map(([l,v,c])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f0;"><span style="font-size:13px;color:#78786a;">${l}</span><span style="font-size:14px;font-weight:700;color:${c};">${v}</span></div>`).join('')}
+    </div>`;
+  return `<div class="fade">${isLocked()?lockOverlay('Compliance Dashboard',auditInner):auditInner}</div>`;
+}
+
+function verifyS(id){
+  S.staffList=S.staffList.map(s=>s.id===id?{...s,status:'active'}:s);
+  const m=S.staffList.find(s=>s.id===id);
+  S.auditLog=[{icon:'✅',txt:`${m.name} manually verified by admin`,time:'Just now',c:'#16a34a'},...S.auditLog];
+  render();toast('FPT verified. Full access granted.');
+}
+function reinstateS(id){
+  S.staffList=S.staffList.map(s=>s.id===id?{...s,status:'active',reason:undefined}:s);
+  const m=S.staffList.find(s=>s.id===id);
+  S.auditLog=[{icon:'✅',txt:`${m.name} FPT reinstated`,time:'Just now',c:'#16a34a'},...S.auditLog];
+  render();toast('Staff member reinstated.');
+}
+
+// ── SHARED INBOX ──────────────────────────────────────────────────────────────
+function inbox(){
+  const msgs=[
+    {from:'Coach Harris',role:'coach',txt:"Hi Tyler, I've been reviewing your film and I'm very impressed with your route running.",t:'1hr ago',u:true},
+    {from:'Coach Davis',role:'coach',txt:"Your numbers are exceptional. We have a great opportunity here.",t:'3hrs ago',u:true},
+    {from:'Nike Brand',role:'brand',txt:"Tyler, we love your content and would like to discuss our NIL opportunity.",t:'Yesterday',u:false},
+  ];
+  return `<div class="fade">
+    <div style="margin-bottom:14px;"><h2 style="font-weight:700;font-size:18px;">Inbox</h2><p style="font-size:12px;color:#a8a898;">${S.role==='athlete'?'Messages from coaches and brands':'Messages'}</p></div>
+    ${S.role==='coach'?`<div class="card" style="border-color:#c7d2fe;background:#eef2ff;display:flex;align-items:center;gap:7px;padding:9px 12px;margin-bottom:10px;"><span style="color:#4f46e5;">🔑</span><p style="font-size:12px;color:#3730a3;">All messages are logged against your FPT credential for compliance.</p></div>`:''}
+    ${isLocked()&&S.role==='coach'?lockOverlay('Athlete Messaging',
+      msgs.map(m=>`<div class="card" style="margin-bottom:9px;">
+        <div style="display:flex;justify-content:space-between;gap:5px;margin-bottom:7px;">
+          <span style="font-weight:600;font-size:13px;">${m.from}</span>
+          <span style="font-size:11px;color:#a8a898;">${m.t}</span>
+        </div>
+        <p style="font-size:13px;color:#5a5a50;background:#fafaf8;border:1px solid #f5f5f0;border-radius:10px;padding:10px 12px;line-height:1.65;">${m.txt}</p>
+      </div>`).join('')
+    ):msgs.map(m=>`<div class="card" style="margin-bottom:9px;${m.u?'border-color:#c7d2fe;':''}">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:5px;margin-bottom:7px;">
+        <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+          <span style="font-weight:600;font-size:13px;">${m.from}</span>
+          <span class="badge ${m.role==='coach'?'g-indigo':'g-purple'}">${m.role==='coach'?'Coach':'Brand'}</span>
+          ${m.u?'<div style="width:7px;height:7px;border-radius:50%;background:#4f46e5;"></div>':''}
+        </div>
+        <span style="font-size:11px;color:#a8a898;">${m.t}</span>
+      </div>
+      <p style="font-size:13px;color:#5a5a50;background:#fafaf8;border:1px solid #f5f5f0;border-radius:10px;padding:10px 12px;line-height:1.65;">${m.txt}</p>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════════════════════
+function openContract(){
+  const tab=S.contractTab;
+  const flags=[
+    {t:'green',c:'Payment terms',plain:'You get paid $1,104 within 14 business days of completing your 3 posts.',rec:'Standard. No action needed.'},
+    {t:'yellow',c:'IP ownership',plain:'Nike can use your posts forever, anywhere, without paying you again.',rec:'Negotiate a 12-month license instead.'},
+    {t:'red',c:'Auto-renewal',plain:'This deal auto-renews every 30 days. Miss the window and you\'re locked in.',rec:'Request removal of auto-renewal entirely.'},
+  ];
+  const fc={green:{bg:'#f0fdf4',b:'#bbf7d0',c:'#16a34a',i:'✓'},yellow:{bg:'#fffbeb',b:'#fde68a',c:'#d97706',i:'!'},red:{bg:'#fef2f2',b:'#fecaca',c:'#dc2626',i:'✕'}};
+  document.getElementById('modals').innerHTML=`
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,.38);backdrop-filter:blur(8px);z-index:800;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;" onclick="closeMod()">
+    <div class="card fade" style="width:100%;max-width:510px;margin:auto;box-shadow:0 20px 50px rgba(0,0,0,.14);" onclick="event.stopPropagation()">
+      <div style="height:3px;background:linear-gradient(90deg,#7e22ce,#a855f7);margin:-14px -14px 14px;border-radius:14px 14px 0 0;"></div>
+      <h2 style="font-weight:700;font-size:18px;margin-bottom:2px;">Nike — Contract Review</h2>
+      <p style="font-size:13px;color:#a8a898;margin-bottom:12px;">3 Instagram posts · $1,200 total</p>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;"><p style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:2px;">Overall assessment</p><p style="font-size:14px;font-weight:700;color:#78350f;">Medium risk — review carefully</p></div>
+        <div style="display:flex;gap:5px;"><span class="badge g-green" style="font-size:10px;">✓ 1 OK</span><span class="badge g-amber" style="font-size:10px;">! 1 Review</span><span class="badge g-red" style="font-size:10px;">✕ 1 Flag</span></div>
+        <div style="text-align:center;"><p style="font-size:24px;font-weight:700;color:#d97706;">62</p><p style="font-size:10px;color:#a8a898;">/ 100</p></div>
+      </div>
+      <div style="display:flex;gap:4px;background:#fafaf8;border:1px solid #f5f5f0;border-radius:11px;padding:3px;margin-bottom:12px;">
+        ${[['summary','Summary'],['flags','Clause Flags'],['sidebyside','Side by Side']].map(([id,l])=>`<button onclick="S.contractTab='${id}';openContract()" style="flex:1;padding:7px;border-radius:9px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:${tab===id?'#fff':'transparent'};color:${tab===id?'#0f0f0a':'#78786a'};box-shadow:${tab===id?'0 1px 3px rgba(0,0,0,.05)':'none'};">${l}</button>`).join('')}
+      </div>
+      ${tab==='summary'?`
+        <p style="font-size:13px;color:#78786a;line-height:1.65;margin-bottom:12px;">Nike offers $1,200 for 3 Instagram posts. You receive $1,104 after Sign Me's 8% fee. Standard payment terms, but the auto-renewal and IP clauses need attention before signing.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          ${[['You receive','$1,104','#16a34a'],['Brand pays','$1,200','#0f0f0a'],['Tax est.','~$276','#d97706'],['Payment','Net-14','#4f46e5']].map(([l,v,c])=>`<div style="background:#fafaf8;border:1px solid #f5f5f0;border-radius:10px;padding:10px;"><p style="font-size:11px;color:#a8a898;margin-bottom:3px;">${l}</p><p style="font-size:15px;font-weight:700;color:${c};">${v}</p></div>`).join('')}
+        </div>
+        <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px;">
+          <p style="font-size:11px;font-weight:700;color:#d97706;margin-bottom:6px;">Request before signing</p>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${['Termination rights','Dispute resolution','Content approval','Kill fee'].map(c=>`<span class="badge g-amber" style="font-size:10px;">${c}</span>`).join('')}</div>
+        </div>`:''}
+      ${tab==='flags'?`<div style="display:flex;flex-direction:column;gap:9px;max-height:280px;overflow-y:auto;">
+        ${flags.map(f=>`<div style="background:${fc[f.t].bg};border:1px solid ${fc[f.t].b};border-radius:12px;padding:12px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:7px;">
+            <div style="width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${fc[f.t].c};background:${fc[f.t].bg};border:1px solid ${fc[f.t].b};">${fc[f.t].i}</div>
+            <span style="font-weight:700;font-size:14px;color:${fc[f.t].c};">${f.c}</span>
+          </div>
+          <p style="font-size:13px;color:#3d3d35;line-height:1.6;margin-bottom:7px;">${f.plain}</p>
+          <p style="font-size:12px;font-weight:500;color:${fc[f.t].c};">💡 ${f.rec}</p>
+        </div>`).join('')}
+      </div>`:''}
+      ${tab==='sidebyside'?`<div style="max-height:280px;overflow-y:auto;">
+        ${flags.map(f=>`<div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #f5f5f0;">
+          <span class="badge" style="background:${fc[f.t].bg};color:${fc[f.t].c};border-color:${fc[f.t].b};margin-bottom:7px;">${f.c}</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+            <div style="background:#fafaf8;border:1px solid #f5f5f0;border-radius:10px;padding:10px;"><p style="font-size:10px;font-weight:700;color:#a8a898;margin-bottom:5px;">Original</p><p style="font-size:12px;color:#78786a;font-style:italic;line-height:1.5;">"${f.plain}"</p></div>
+            <div style="background:${fc[f.t].bg};border:1px solid ${fc[f.t].b};border-radius:10px;padding:10px;"><p style="font-size:10px;font-weight:700;color:${fc[f.t].c};margin-bottom:5px;">Plain English</p><p style="font-size:12px;color:#3d3d35;line-height:1.5;">${f.plain}</p></div>
+          </div>
+        </div>`).join('')}
+      </div>`:''}
+      <p style="font-size:11px;color:#d4d4c8;margin:10px 0;">AI-generated · Not legal advice · For deals over $5,000, consult a sports attorney</p>
+      <div style="display:flex;gap:7px;">
+        <button onclick="closeMod();toast('Deal declined.',false)" class="btn btn-danger btn-md">Decline</button>
+        <button onclick="closeMod()" class="btn btn-secondary btn-md">Review later</button>
+        <button onclick="closeMod();toast('Deal accepted! $1,104 incoming to Stripe.')" class="btn btn-primary btn-md btn-full">Accept — $1,104 →</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openAthlete(id){
+  const a=ATHLETES.find(x=>x.id===id);if(!a)return;
+  const isBrand=S.role==='brand';const isCoach=S.role==='coach'||S.role==='admin';
+  const tab=S.profileTab;
+  const sc=SC[a.status]||'g-warm';
+
+  function tabContent(){
+    if(tab==='film')return`<div style="display:flex;flex-direction:column;gap:8px;">
+      ${[{t:'2025 Season Highlights',v:'47K',s:'Hudl',d:'3:24'},{t:'State Championship',v:'12K',s:'Hudl',d:'4:12'},{t:'7on7 Tournament',v:'18K',s:'YouTube',d:'1:47'}].map(v=>`
+      <div style="display:flex;align-items:stretch;background:#fafaf8;border:1px solid #f5f5f0;border-radius:12px;overflow:hidden;cursor:pointer;" onmouseover="this.style.borderColor='#e8e8e0'" onmouseout="this.style.borderColor='#f5f5f0'">
+        <div style="width:80px;background:#e8e8e0;display:flex;align-items:center;justify-content:center;flex-shrink:0;position:relative;font-size:22px;">🎬
+          <span style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border-radius:3px;padding:1px 4px;font-size:9px;font-family:monospace;">${v.d}</span>
+        </div>
+        <div style="padding:10px 12px;flex:1;">
+          <p style="font-weight:600;font-size:13px;margin-bottom:2px;">${v.t}</p>
+          <p style="font-size:11px;color:#a8a898;">${v.s} · ${v.v} views</p>
+        </div>
+      </div>`).join('')}
+    </div>`;
+    if(tab==='stats')return`<div style="background:#fafaf8;border:1px solid #f5f5f0;border-radius:12px;overflow:hidden;">
+      ${[['40-yard dash','4.38s','#d97706'],['Vertical jump','38"','#4f46e5'],['GPA',a.gpa,'#16a34a'],['Stars',`${a.stars}★`,'#d97706'],['Division',a.div,'#78786a'],['Status',a.status,'#9333ea']].map(([l,v,c],i,arr)=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;${i<arr.length-1?'border-bottom:1px solid #f5f5f0':''}">
+        <span style="font-size:13px;color:#78786a;">${l}</span>
+        <span style="font-size:13px;font-weight:700;color:${c};">${v}</span>
+      </div>`).join('')}
+    </div>`;
+    if(tab==='social')return`<div style="display:flex;flex-direction:column;gap:7px;">
+      ${[['📸','Instagram','#E1306C','78.4K','6.1%'],['♪','TikTok','#ff2d55','34.7K','9.2%'],['⭐','Rivals','#f59e0b','#3 Natl','5★'],['🎬','Hudl','#ff6900','47K views','—']].map(([icon,l,c,f,e])=>`
+      <div style="display:flex;align-items:center;gap:10px;background:#fafaf8;border:1px solid #f5f5f0;border-radius:11px;padding:10px 12px;">
+        <span style="font-size:16px;width:22px;text-align:center;">${icon}</span>
+        <span style="flex:1;font-weight:600;font-size:13px;color:${c};">${l}</span>
+        <div style="text-align:right;"><p style="font-weight:700;font-size:13px;">${f}</p>${e!=='—'?`<p style="font-size:11px;color:#16a34a;">${e} eng</p>`:''}</div>
+        <span class="badge g-green" style="font-size:10px;">✓</span>
+      </div>`).join('')}
+    </div>`;
+    if(tab==='nil')return`<div>
+      ${isBrand?`<div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:12px;padding:14px;margin-bottom:10px;">
+        <p style="font-size:10px;font-weight:700;color:#9333ea;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">NIL Market Score <span style="color:#dc2626;font-size:9px;">— private, not shown to athlete</span></p>
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+          <div style="width:58px;height:58px;border-radius:50%;border:4px solid #e9d5ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><span style="font-size:20px;font-weight:700;color:#9333ea;">${a.ms}</span></div>
+          <div style="flex:1;">${prog(a.ms,'#9333ea',6)}<p style="font-size:11px;color:#9333ea;margin-top:4px;">${a.ms}/100 · ${a.ms>=70?'Growth tier':'Emerging tier'}</p></div>
+        </div>
+      </div>`:''}
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-bottom:10px;">
+        <p style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Estimated deal value</p>
+        <p style="font-size:26px;font-weight:700;color:#15803d;margin-bottom:2px;">$800 – $2,400</p>
+        <p style="font-size:11px;color:#16a34a;margin-bottom:${isBrand?12:0}px;">per campaign · athlete keeps 100%</p>
+        ${isBrand?`<button onclick="closeMod();toast('NIL offer sent to ${a.name}!')" class="btn btn-primary btn-sm btn-full">Send NIL offer →</button>`:''}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;">${a.cats.map(c=>`<span style="padding:5px 12px;border-radius:20px;background:#faf5ff;color:#9333ea;border:1px solid #e9d5ff;font-size:12px;">${c}</span>`).join('')}</div>
+    </div>`;
+    return'';
+  }
+
+  document.getElementById('modals').innerHTML=`
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,.38);backdrop-filter:blur(8px);z-index:800;display:flex;align-items:flex-start;justify-content:center;padding:16px;overflow-y:auto;" onclick="closeMod()">
+    <div class="card fade" style="width:100%;max-width:510px;margin:auto;box-shadow:0 20px 50px rgba(0,0,0,.14);" onclick="event.stopPropagation()">
+      <div style="height:3px;background:linear-gradient(90deg,${a.status==='In Portal'?'#d97706':a.status==='Committed'?'#4f46e5':a.status==='Receiving Offers'?'#9333ea':'#16a34a'},transparent);margin:-14px -14px 14px;border-radius:14px 14px 0 0;"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <div>
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:3px;">
+            <h2 style="font-size:20px;font-weight:700;">${a.name}</h2>
+            ${a.verified?`<span style="font-size:15px;">${a.div==='HS'?'🔵':'🥇'}</span>`:''}
+            ${a.nil?'<span class="badge g-purple">✦ NIL</span>':''}
+          </div>
+          <p style="font-size:12px;color:#a8a898;">${a.pos} · ${a.school} · ${a.div}</p>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+          <span class="badge ${sc}">${a.status}</span>
+          ${isCoach?`<button onclick="closeMod();toast('Interest sent to ${a.name}!')" class="btn btn-primary btn-sm">Express interest</button>`:''}
+          ${isBrand&&a.nil?`<button onclick="S.profileTab='nil';openAthlete('${a.id}')" class="btn btn-primary btn-sm" style="background:linear-gradient(135deg,#7e22ce,#9333ea);">See NIL value</button>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:3px;background:#fafaf8;border:1px solid #f5f5f0;border-radius:11px;padding:3px;margin-bottom:14px;">
+        ${[['film','🎬 Film'],['stats','📊 Stats'],['social','📡 Social'],['nil','✦ NIL']].map(([tid,tl])=>`<button onclick="S.profileTab='${tid}';openAthlete('${a.id}')" style="flex:1;padding:7px;border-radius:9px;font-size:12px;font-weight:600;border:none;cursor:pointer;background:${tab===tid?'#fff':'transparent'};color:${tab===tid?'#0f0f0a':'#78786a'};box-shadow:${tab===tid?'0 1px 3px rgba(0,0,0,.05)':'none'};">${tl}</button>`).join('')}
+      </div>
+      <div>${tabContent()}</div>
+      <div style="display:flex;gap:7px;margin-top:14px;padding-top:14px;border-top:1px solid #f5f5f0;">
+        <button onclick="closeMod()" class="btn btn-secondary btn-md">Close</button>
+        <button onclick="S.watchlist.includes('${a.id}')?S.watchlist.splice(S.watchlist.indexOf('${a.id}'),1):S.watchlist.push('${a.id}');render();openAthlete('${a.id}')" style="padding:9px 14px;border-radius:11px;font-size:13px;font-weight:600;border:1px solid ${S.watchlist.includes(a.id)?'#fde68a':'#e8e8e0'};background:${S.watchlist.includes(a.id)?'#fffbeb':'#fff'};color:${S.watchlist.includes(a.id)?'#d97706':'#78786a'};cursor:pointer;">
+          ${S.watchlist.includes(a.id)?'★ Watching':'☆ Watch'}
+        </button>
+        ${isCoach?`<button onclick="S.board['${a.id}']='Identified';render();closeMod();toast('${a.name} added to board!')" class="btn btn-secondary btn-md">+ Board</button>`:''}
+        ${isBrand&&a.nil?`<button onclick="closeMod();toast('NIL offer sent to ${a.name}!')" class="btn btn-primary btn-md btn-full">Send NIL offer →</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function openRevoke(id,action){
+  const s=S.staffList.find(x=>x.id===id);
+  document.getElementById('modals').innerHTML=`
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,.38);backdrop-filter:blur(8px);z-index:800;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="closeMod()">
+    <div class="card fade" style="width:100%;max-width:400px;box-shadow:0 20px 50px rgba(0,0,0,.14);border-color:${action==='revoke'?'#fecaca':'#fde68a'};" onclick="event.stopPropagation()">
+      <h3 style="font-weight:700;font-size:17px;color:${action==='revoke'?'#dc2626':'#d97706'};margin-bottom:8px;">${action==='revoke'?'🚨 Revoke FPT':'⚠️ Suspend Staff Member'}</h3>
+      <p style="font-size:13px;color:#78786a;line-height:1.65;margin-bottom:14px;">
+        ${action==='revoke'?`<b>${s.name}</b> will be <b style="color:#dc2626;">immediately locked out</b> of all platform features. This action is logged to the audit trail.`:`<b>${s.name}</b> will retain read-only portal access but cannot message athletes or make offers.`}
+      </p>
+      <label style="display:block;font-size:11px;font-weight:700;color:#a8a898;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Reason (required for audit log)</label>
+      <textarea id="rr" rows="2" placeholder="${action==='revoke'?'e.g. Staff member terminated 3/15/2026':'e.g. Under investigation'}"
+        style="width:100%;background:#fafaf8;border:1px solid #e8e8e0;border-radius:10px;padding:10px 12px;font-size:13px;resize:none;outline:none;margin-bottom:14px;"></textarea>
+      <div style="display:flex;gap:8px;">
+        <button onclick="closeMod()" class="btn btn-secondary btn-md">Cancel</button>
+        <button onclick="confirmRevoke('${id}','${action}')" class="btn btn-md btn-full" style="background:${action==='revoke'?'#dc2626':'#d97706'};color:#fff;">
+          ${action==='revoke'?'Revoke — lock out now':'Suspend'}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function confirmRevoke(id,action){
+  const reason=document.getElementById('rr')?.value;
+  if(!reason?.trim()){
+    document.getElementById('rr').style.borderColor='#fecaca';
+    document.getElementById('rr').placeholder='Required — please enter a reason';
+    return;
+  }
+  S.staffList=S.staffList.map(s=>s.id===id?{...s,status:action==='revoke'?'revoked':'suspended',reason}:s);
+  const m=S.staffList.find(s=>s.id===id);
+  S.auditLog=[{icon:action==='revoke'?'🚨':'⚠️',txt:`${m.name} FPT ${action==='revoke'?'revoked':'suspended'} — ${reason}`,time:'Just now',c:action==='revoke'?'#dc2626':'#d97706'},...S.auditLog];
+  closeMod();render();
+  toast(action==='revoke'?'FPT revoked. Staff locked out immediately.':'Staff member suspended.');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
